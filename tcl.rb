@@ -8,13 +8,19 @@ module Tcl
   class CommandFailError < TclError; end
 
   class List
-    extend(Forwardable)
+    #extend(Forwardable)
     attr_accessor :parenthesis, :val
 
     def initialize(str = "", lp = "")
       @str = StringIO.new(str)
       @parenthesis = lp
       @val =  {}
+    end
+
+    def setCommand(str)
+      @str.string = str
+      @parenthesis = ""
+      self
     end
 
     def to_a
@@ -49,12 +55,14 @@ module Tcl
 
     def parse
       res = ""
-      loop {
-        r = get_words
-        break if r.size == 0
-        res = exec r
-      }
-      res
+      begin
+        loop {
+          r = get_words
+          res = exec r || res
+        }
+      rescue EOFError => e
+        return res
+      end
     end
 
     def get_words
@@ -127,6 +135,7 @@ module Tcl
           end
         rescue EOFError => e
           r.push(List.new(cmd)) unless cmd == ""
+          raise e if r.size == 0
           return r
         end
       end
@@ -135,21 +144,24 @@ module Tcl
     def exec(ar)
       cmd = preexec(ar)
       c = cmd.shift
-      send(c.to_s.to_sym, cmd)
+      if !c || c.match(/^#/) then
+        return nil
+      end
+      send(c.to_s.downcase.to_sym, cmd)
     end
 
     def preexec (ar)
       r = ar.map do |a|
         if a.parenthesis != "{" then
           #変数置換
-          s = a.gsub(/\$([a-zA-Z0-9_:]+)/) { @val[$1] }
-          .gsub(/\$\{([^}]+)\}/) { @val[$1]}
+          s = List.new(a.to_s.gsub(/\$([a-zA-Z0-9_:]+)/) { @val[$1] }
+          .gsub(/\$\{([^}]+)\}/) { @val[$1]})
           #コマンド置き換え
           if a.parenthesis == "[" then
             r = s.get_words
             s = exec(r)
           else
-            s = s.gsub(/\[(.*)\]/) { p $1; t = List.new($1); t = t.get_words; t = exec(t); t }
+            s = List.new(s.to_s.gsub(/\[(.*)\]/) { t = List.new($1); t.parse })
           end
           # regex = /\[(.*?[^\\])\]/
           # while regex.match(s)
@@ -164,13 +176,13 @@ module Tcl
     end
 
     def set(val)
-      p val
+      #p val
       if val.size == 1 then
         puts @val[val[0].to_s]
       elsif val.size == 2 then
         @val[val[0].to_s] = val[1]
       else
-        raize CommandFailError("set")
+        raize CommandFailError.new("set")
       end
     end
     def expr(val)
@@ -186,101 +198,101 @@ module Tcl
   end
 end
 
-  # class TclListx < String
-  #
-  #   attr_accessor :replacable
-  #
-  #   def initialize(str = "")
-  #     @replacable = true
-  #     @val = Hash.new
-  #     super
-  #   end
-  #
-  #   def split_into_words
-  #     r = []
-  #     pstack = []
-  #     is_escape = false
-  #     cmd = TclList.new
-  #     self.each_char do |b|
-  #       if is_escape then
-  #         if b == "\n" then
-  #           cmd << " "
-  #         else
-  #           cmd << "\\#{b}"
-  #         end
-  #         is_escape = false
-  #       else
-  #         case b
-  #         when "\\"
-  #           is_escape = true
-  #         when "\n", ";"
-  #           r.push(cmd)
-  #           return r
-  #         when " "
-  #           if pstack.empty? then
-  #             r.push(cmd) unless cmd == ""
-  #             cmd = TclList.new
-  #           else
-  #             cmd << b
-  #           end
-  #         when "{", "["
-  #           cmd << b
-  #           if pstack.empty? then
-  #             pstack.push(b)
-  #           elsif pstack[-1] == b then
-  #             pstack.push(b)
-  #           end
-  #         when "\""
-  #           cmd << b
-  #           if pstack.empty? then
-  #             pstack.push(b)
-  #           elsif pstack[-1] == b then
-  #             pstack.pop
-  #             r.push(cmd)
-  #             cmd = TclList.new
-  #           end
-  #         when "}", "]"
-  #           cmd << b
-  #           if !pstack.empty? && pstack[-1] == b then
-  #             pstack.pop
-  #           end
-  #           if pstack.empty? then
-  #             cmd.replacable = false if b == "}"
-  #             r.push(cmd)
-  #             cmd = TclList.new
-  #           end
-  #         else
-  #           cmd << b
-  #         end
-  #       end
-  #     end
-  #     r.push(cmd)
-  #     r
-  #   end
-  #
-  #   def replace (ar)
-  #     r = ar.map do |a|
-  #       if a.replacable then
-  #         #変数置換
-  #         s = a.gsub(/\$([a-zA-Z0-9_:]+)/) { @val[$1] }
-  #         .gsub(/\$\{([^}]+)\}/) { @val[$1]}
-  #         #コマンド置き換え
-  #         regex = /\[(.*?[^\\])\]/
-  #         while regex.match(s)
-  #           s = s.gsub(regex) { exec $1 }
-  #         end
-  #         s
-  #       else
-  #         a
-  #       end
-  #     end
-  #     r
-  #   end
-  #
-  #   def exec (val)
-  #     p val
-  #     "test"
-  #   end
-  #
-  # end
+# class TclListx < String
+#
+#   attr_accessor :replacable
+#
+#   def initialize(str = "")
+#     @replacable = true
+#     @val = Hash.new
+#     super
+#   end
+#
+#   def split_into_words
+#     r = []
+#     pstack = []
+#     is_escape = false
+#     cmd = TclList.new
+#     self.each_char do |b|
+#       if is_escape then
+#         if b == "\n" then
+#           cmd << " "
+#         else
+#           cmd << "\\#{b}"
+#         end
+#         is_escape = false
+#       else
+#         case b
+#         when "\\"
+#           is_escape = true
+#         when "\n", ";"
+#           r.push(cmd)
+#           return r
+#         when " "
+#           if pstack.empty? then
+#             r.push(cmd) unless cmd == ""
+#             cmd = TclList.new
+#           else
+#             cmd << b
+#           end
+#         when "{", "["
+#           cmd << b
+#           if pstack.empty? then
+#             pstack.push(b)
+#           elsif pstack[-1] == b then
+#             pstack.push(b)
+#           end
+#         when "\""
+#           cmd << b
+#           if pstack.empty? then
+#             pstack.push(b)
+#           elsif pstack[-1] == b then
+#             pstack.pop
+#             r.push(cmd)
+#             cmd = TclList.new
+#           end
+#         when "}", "]"
+#           cmd << b
+#           if !pstack.empty? && pstack[-1] == b then
+#             pstack.pop
+#           end
+#           if pstack.empty? then
+#             cmd.replacable = false if b == "}"
+#             r.push(cmd)
+#             cmd = TclList.new
+#           end
+#         else
+#           cmd << b
+#         end
+#       end
+#     end
+#     r.push(cmd)
+#     r
+#   end
+#
+#   def replace (ar)
+#     r = ar.map do |a|
+#       if a.replacable then
+#         #変数置換
+#         s = a.gsub(/\$([a-zA-Z0-9_:]+)/) { @val[$1] }
+#         .gsub(/\$\{([^}]+)\}/) { @val[$1]}
+#         #コマンド置き換え
+#         regex = /\[(.*?[^\\])\]/
+#         while regex.match(s)
+#           s = s.gsub(regex) { exec $1 }
+#         end
+#         s
+#       else
+#         a
+#       end
+#     end
+#     r
+#   end
+#
+#   def exec (val)
+#     p val
+#     "test"
+#   end
+#
+# end
 #end
