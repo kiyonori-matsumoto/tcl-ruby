@@ -31,7 +31,9 @@ class TestTclList < Test::Unit::TestCase
     p @t.setCommand("set G [list Index  Panda  Tomato]").parse
     assert_equal(@t.val["G"][0].to_s, "Index")
     p @t.setCommand("set G [list Index Panda [list Tomato Lemon] Apple]").parse
-
+    p @t.setCommand("string first a 123456789abcdef").parse
+    p @t.setCommand("llength [list 1 2 3 4 5]").parse
+    p @t.setCommand("lappend G Chili").parse
 
   end
 end
