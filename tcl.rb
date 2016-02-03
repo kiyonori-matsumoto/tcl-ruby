@@ -198,14 +198,27 @@ module Tcl
       @val[val[0].to_s] = List.new("#{@val[val[0].to_s]} #{val[1]}")
     end
     def string(val)
-      case val[0].to_s
+      case val[0].to_s.downcase
       when "first"
         val[2].to_s.index(val[1].to_s, val[3].to_i)
+      when "index"
+        if m = /end-(\d+)/.match(val[2].to_s) then
+          arg = -1 - m[1].to_i
+        elsif m = /end/.match(val[2].to_s) then
+          arg = -1
+        else
+          arg = val[2].to_i
+        end
+        val[1].to_s[arg]
       #when "compare"
 
       else
         raise CommandFailError.new("command \"string #{val[0]}\" not found")
       end
+    end
+
+    def get_options(val)
+
     end
 
   end

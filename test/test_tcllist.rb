@@ -34,6 +34,8 @@ class TestTclList < Test::Unit::TestCase
     p @t.setCommand("string first a 123456789abcdef").parse
     p @t.setCommand("llength [list 1 2 3 4 5]").parse
     p @t.setCommand("lappend G Chili").parse
+    assert_equal(@t.setCommand("string index qwerty 3").parse, "r")
+    assert_equal(@t.setCommand("string index qwerty end-1").parse, "t")
 
   end
 end
