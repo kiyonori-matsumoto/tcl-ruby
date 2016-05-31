@@ -119,7 +119,7 @@ module_eval(<<'.,.,', 'tcl_rule.y', 5)
 
 module_eval(<<'.,.,', 'tcl_rule.y', 6)
   def _reduce_4(val, _values, result)
-     result << val[1] 
+     result = tcl_exec(val[0].concat val[1]) 
     result
   end
 .,.,
