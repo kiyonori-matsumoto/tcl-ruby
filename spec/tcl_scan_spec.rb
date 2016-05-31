@@ -35,5 +35,9 @@ RSpec.describe 'Tclp' do
       expect(tclp.parse(str)).to eq ['set', ['A', '{B C {D E}}']]
     end
 
+    it 'is not able to parse unbarance parenthesises' do
+      str = 'set A {B C {D E}'
+      expect { tclp.parse(str) }.to raise_error ParseError
+    end
   end
 end

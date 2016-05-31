@@ -1,4 +1,4 @@
-require "./tcl_rule.tab.rb"
+require './tcl_rule.tab.rb'
 require 'strscan'
 
 class Tclp
@@ -9,9 +9,9 @@ class Tclp
   def parse(str)
     @q = []
     s = StringScanner.new(str)
-    buffer = ""
+    buffer = ''
     until s.empty?
-      if s.scan(/{.*?(?<!\\)}/m)
+      if s.scan(/(?<big>(?<!\\){[^{}]*?(\g<big>)*[^{}]*?(?<!\\)})/m)
         buffer << s[0]
       elsif s.scan(/".*?(?<!")"/m)
         buffer << s[0]
@@ -21,13 +21,14 @@ class Tclp
         buffer << s[0]
       elsif s.scan(/\n|;/)
         @q.push [:IDENTIFIER, buffer] unless buffer.empty?
-        @q.push [false, "END"]
-        buffer = ""
+        @q.push [:EOL, '']
+        @q.push [false, 'END']
+        buffer = ''
         do_parse
         @q.clear
       elsif s.scan(/\s+/)
-        @q.push [:IDENTIFIER, buffer ] unless buffer.empty?
-        buffer = ""
+        @q.push [:IDENTIFIER, buffer] unless buffer.empty?
+        buffer = ''
       elsif s.scan(/\w+/)
         buffer << s[0]
       else
@@ -36,7 +37,8 @@ class Tclp
     end
     @q.push [:IDENTIFIER, buffer] unless buffer.empty?
     unless @q.empty?
-      @q.push [false, "END"]
+      @q.push [:EOL, '']
+      @q.push [false, 'END']
       do_parse
     end
   end
