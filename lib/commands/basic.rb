@@ -59,6 +59,17 @@ class TclField
     }
   end
 
+  def ___while(arg)
+    body = delete_parenthesis(arg[1])
+    catch(:break) {
+      while eval(replace(delete_parenthesis(arg[0])))
+        catch(:continue) {
+          parse(body)
+        }
+      end
+    }
+  end
+
   def ___break(_arg)
     throw :break
   end

@@ -63,5 +63,15 @@ RSpec.describe 'TclField' do
         expect(f.variables('X')).to eq 'B D F {}'
       end
     end
+
+    describe 'while' do
+      before(:each) do
+        f.parse('set B 0')
+      end
+      it 'should act' do
+        f.parse('while {$B < 10} {incr B}')
+        expect(f.variables('B')).to eq '10'
+      end
+    end
   end
 end

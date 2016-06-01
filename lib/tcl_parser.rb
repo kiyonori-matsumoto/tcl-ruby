@@ -40,15 +40,15 @@ class TclField
         elsif s.scan(/\S/)
           # nil
         else
-          raise ParseError.new "parse error #{s.rest}"
+          raise(ParseError, "parse error #{s.rest}")
         end
         buffer << s[0]
       end
     end
     r << buffer unless buffer.empty?
     ret = command(r) if !r.empty? && !to_list
-    raise ParseError.new 'unmatched parenthesises' if ddepth != 0 ||
-                                                      pdepth != 0 || bdepth != 0
+    raise(ParseError, 'unmatched parenthesises') if ddepth != 0 ||
+                                                    pdepth != 0 || bdepth != 0
     if to_list
       r
     else

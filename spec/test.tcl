@@ -5,3 +5,7 @@ set C [expr $A * $B]
 if {$A == 3} {
   set D $C
 }
+for {set i 1; set x 1} {$i < 10} {incr i} {
+  set x [expr $x * $i]
+}
+set x

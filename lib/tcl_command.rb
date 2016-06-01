@@ -3,7 +3,9 @@ class TclField
     return @prev if arg[0][0] == '#'
     # return previous command result when comment statement executed
     arg = arg.map { |e| replace(e) }
-    if respond_to?("___#{arg[0]}")
+    if (@hooks.key?(arg[0]))
+      @hooks[arg[0]].call(arg[1..-1])
+    elsif respond_to?("___#{arg[0]}")
       @prev = send("___#{arg[0]}", arg[1..-1])
     else
       raise(CommandError, "command not found, #{arg[0]}")
