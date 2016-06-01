@@ -1,9 +1,8 @@
-require 'rspec'
-require_relative '../lib/tcl_ruby.rb'
+require 'spec_helper.rb'
 
-RSpec.describe TclField do
+RSpec.describe Tcl::Ruby::TclField do
   describe 'parse long string' do
-    let(:f) { TclField.new }
+    let(:f) { Tcl::Ruby::TclField.new }
     it 'should parse all commands inside file' do
       open('./spec/test.tcl') do |file|
         f.parse(file.read)

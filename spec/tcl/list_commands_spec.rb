@@ -1,9 +1,8 @@
-require 'rspec'
-require_relative '../lib/tcl_ruby.rb'
+require 'spec_helper.rb'
 
-RSpec.describe TclField do
+RSpec.describe Tcl::Ruby::TclField do
   describe 'execution of list commands' do
-    let(:f) { TclField.new }
+    let(:f) { Tcl::Ruby::TclField.new }
     it 'creates list' do
       str = 'list A B C'
       expect(f.parse(str)).to eq 'A B C'
@@ -58,15 +57,15 @@ RSpec.describe TclField do
     it 'returns inserted list' do
       expect(f.parse('linsert {A B C} 2 D')).to eq '{A B D C}'
       expect(f.parse('linsert {A  B  C} 1 D E')).to eq '{A D E B C}'
-      expect { f.parse('linsert {A B C} 1') }.to raise_error TclField::CommandError
+      expect { f.parse('linsert {A B C} 1') }.to raise_error Tcl::Ruby::CommandError
     end
 
-    it "returns ranged list" do
+    it 'returns ranged list' do
       expect(f.parse('lrange {A B C D} 0 2')).to eq '{A B C}'
       expect(f.parse('lrange {A B C D} -1 1')).to eq '{A B}'
       expect(f.parse('lrange {A  B  ZED  {D T}} 2 6')).to eq '{ZED {D T}}'
       expect(f.parse('lrange {A B C} 2 1')).to eq ''
-      expect { f.parse('lrange {A B C} 2') }.to raise_error TclField::CommandError
+      expect { f.parse('lrange {A B C} 2') }.to raise_error Tcl::Ruby::CommandError
     end
   end
 end

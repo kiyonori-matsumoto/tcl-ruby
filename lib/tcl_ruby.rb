@@ -1,5 +1,0 @@
-require_relative './tcl_parser.rb'
-require_relative './tcl_command.rb'
-require_relative './commands/commands.rb'
-require_relative './tcl_util.rb'
-require_relative './tcl_error.rb'

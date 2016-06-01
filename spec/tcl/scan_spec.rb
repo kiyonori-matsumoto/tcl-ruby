@@ -1,10 +1,9 @@
-require 'rspec'
-require_relative '../lib/tcl_ruby.rb'
+require 'spec_helper.rb'
 
 RSpec.describe 'TclField' do
   describe '#parse' do
     describe 'initialized with "to_list = true"' do
-      let(:tclp) { TclField.new }
+      let(:tclp) { Tcl::Ruby::TclField.new }
       it 'is able to parse normal' do
         str = 'set A B'
         expect(tclp.parse(str, true)).to eq %w(set A B)
@@ -43,7 +42,7 @@ RSpec.describe 'TclField' do
 
       it 'is not able to parse unbarance parenthesises' do
         str = 'set A {B C {D E}'
-        expect { tclp.parse(str, true) }.to raise_error TclField::ParseError
+        expect { tclp.parse(str, true) }.to raise_error Tcl::Ruby::ParseError
       end
     end
   end

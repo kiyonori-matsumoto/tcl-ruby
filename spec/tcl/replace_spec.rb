@@ -1,9 +1,8 @@
-require 'rspec'
-require_relative '../lib/tcl_ruby.rb'
+require 'spec_helper.rb'
 
 RSpec.describe 'TclField' do
   describe 'replace' do
-    let(:f) { TclField.new }
+    let(:f) { Tcl::Ruby::TclField.new }
     before(:each) do
       f.parse('set A 1')
     end
@@ -13,7 +12,7 @@ RSpec.describe 'TclField' do
     end
 
     it 'is not able to get unwritten variable' do
-      expect { f.variables('B') }.to raise_error TclField::TclError
+      expect { f.variables('B') }.to raise_error Tcl::Ruby::TclError
     end
 
     it 'should replace variables' do

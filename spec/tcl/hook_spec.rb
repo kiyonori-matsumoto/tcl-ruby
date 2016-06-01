@@ -1,9 +1,8 @@
-require 'rspec'
-require_relative '../lib/tcl_ruby.rb'
+require 'spec_helper.rb'
 
-RSpec.describe TclField do
+RSpec.describe Tcl::Ruby::TclField do
   describe '#add_hook' do
-    let(:f) { TclField.new }
+    let(:f) { Tcl::Ruby::TclField.new }
     def test_aaaa(arg)
       puts arg[0]
     end
