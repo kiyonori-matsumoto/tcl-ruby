@@ -23,16 +23,16 @@ Or install it yourself as:
 ## Usage
 
 Instanciate TclField
-```
-set f = TclField.new
+```ruby
+f = TclField.new
 ```
 Parse commands you want to
-```
+```ruby
 f.parse('llength {A B C D}')
 => 4
 ```
 You can get variables with TclField#variables
-```
+```ruby
 f.parse('set A 123')
 f.variables('A')
 => '123'
