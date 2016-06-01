@@ -1,3 +1,4 @@
+[![Code Climate](https://codeclimate.com/github/kiyonori-matsumoto/tcl-ruby/badges/gpa.svg)](https://codeclimate.com/github/kiyonori-matsumoto/tcl-ruby)
 # tcl-ruby
 Tcl interpreter for Ruby
 
