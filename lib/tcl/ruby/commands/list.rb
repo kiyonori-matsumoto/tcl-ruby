@@ -25,7 +25,7 @@ module Tcl
               a.gsub!(/end/, (l.size - 1).to_s)
               pos = eval(a)
               if (0...l.size).cover?(pos)
-                l = _to_string(l[pos]) # i dont know why,but to_string is needed
+                l = l[pos]
               else
                 return ''
               end
@@ -45,7 +45,8 @@ module Tcl
         raise(CommandError, 'linsert list insertposition elements') unless arg.size >= 3
         l = parse(arg[0], true)
         l.insert(arg[1].to_i, *arg[2..-1])
-        "{#{l.join(' ')}}"
+        # "{#{l.join(' ')}}"
+        l.to_list
       end
 
       def ___lrange(arg)
@@ -55,7 +56,7 @@ module Tcl
         last = arg[2].to_i
         l = parse(arg[0], true)
         if first <= last
-          "{#{l[first..last].join(' ')}}"
+          l[first..last].to_list
         else
           ''
         end
@@ -63,8 +64,8 @@ module Tcl
 
       def ___lappend(arg)
         l = parse(variables(arg[0]), true)
-        l.push(*arg[1..-1].map { |e| _to_list(e) })
-        @variables[arg[0]] = l.join(' ').to_s
+        l.push(*arg[1..-1])
+        @variables[arg[0]] = l.to_list
       end
     end
   end

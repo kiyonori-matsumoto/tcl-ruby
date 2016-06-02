@@ -61,7 +61,7 @@ module Tcl
         raise(ParseError, 'unmatched parenthesises') if
         ddepth != 0 || pdepth != 0 || bdepth != 0
         if to_list
-          r.to_a
+          r.to_string
         else
           ret = command(r) unless r.empty?
           ret

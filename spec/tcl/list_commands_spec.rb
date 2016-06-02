@@ -55,17 +55,20 @@ RSpec.describe Tcl::Ruby::Interpreter do
     end
 
     it 'returns inserted list' do
-      expect(f.parse('linsert {A B C} 2 D')).to eq '{A B D C}'
-      expect(f.parse('linsert {A  B  C} 1 D E')).to eq '{A D E B C}'
-      expect { f.parse('linsert {A B C} 1') }.to raise_error Tcl::Ruby::CommandError
+      expect(f.parse('linsert {A B C} 2 D')).to eq 'A B D C'
+      expect(f.parse('linsert {A  B  C} 1 D E')).to eq 'A D E B C'
+      expect(f.parse('linsert {a b {c d} e} 1 {d e}')).to eq 'a {d e} b {c d} e'
+      expect { f.parse('linsert {A B C} 1') }
+        .to raise_error Tcl::Ruby::CommandError
     end
 
     it 'returns ranged list' do
-      expect(f.parse('lrange {A B C D} 0 2')).to eq '{A B C}'
-      expect(f.parse('lrange {A B C D} -1 1')).to eq '{A B}'
-      expect(f.parse('lrange {A  B  ZED  {D T}} 2 6')).to eq '{ZED {D T}}'
+      expect(f.parse('lrange {A B C D} 0 2')).to eq 'A B C'
+      expect(f.parse('lrange {A B C D} -1 1')).to eq 'A B'
+      expect(f.parse('lrange {A  B  ZED  {D T}} 2 6')).to eq 'ZED {D T}'
       expect(f.parse('lrange {A B C} 2 1')).to eq ''
-      expect { f.parse('lrange {A B C} 2') }.to raise_error Tcl::Ruby::CommandError
+      expect { f.parse('lrange {A B C} 2') }
+        .to raise_error Tcl::Ruby::CommandError
     end
   end
 end

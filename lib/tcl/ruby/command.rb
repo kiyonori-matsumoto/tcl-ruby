@@ -4,7 +4,8 @@ module Tcl
       def command(arg)
         return @prev if arg[0][0] == '#'
         # return previous command result when comment statement executed
-        arg = arg.map { |e| replace(e) }
+        arg.map! { |e| replace(e) }
+        arg.to_string
         name = arg[0]
         if @proc.key?(name)
         elsif @hooks.key?(name)
@@ -17,7 +18,7 @@ module Tcl
       end
 
       def replace(list)
-        return _to_string(list) if list[0] == '{'
+        return list if list[0] == '{'
         # replace variable
         l = list.gsub(/\$\{(.+?)\}|\$([\w()]+)/) do
           v = Regexp.last_match(Regexp.last_match(1) ? 1 : 2)
@@ -39,26 +40,6 @@ module Tcl
         end
         # replace commands
         l = l.gsub(/\[(.+)\]/) { parse(Regexp.last_match(1)) }
-        _to_string(l)
-      end
-
-      private
-
-      def _to_string(str)
-        if str[0] == '{' && str[-1] == '}'
-          str = str[1..-2]
-        elsif str[0] == '"' && str[-1] == '"'
-          str = str[1..-2]
-        end
-        str
-      end
-
-      def _to_list(str)
-        if str == '' || str.match(/\s/)
-          "{#{str}}"
-        else
-          str
-        end
       end
     end
   end
