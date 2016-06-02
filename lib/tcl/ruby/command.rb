@@ -5,17 +5,19 @@ module Tcl
         return @prev if arg[0][0] == '#'
         # return previous command result when comment statement executed
         arg = arg.map { |e| replace(e) }
-        if @hooks.key?(arg[0])
-          @hooks[arg[0]].call(arg[1..-1])
-        elsif respond_to?("___#{arg[0]}", true)
-          @prev = send("___#{arg[0]}", arg[1..-1])
+        name = arg[0]
+        if @proc.key?(name)
+        elsif @hooks.key?(name)
+          @hooks[name].call(arg[1..-1])
+        elsif respond_to?("___#{name}", true)
+          @prev = send("___#{name}", arg[1..-1])
         else
-          raise(CommandError, "command not found, #{arg[0]}")
+          raise(CommandError, "command not found, #{name}")
         end
       end
 
       def replace(list)
-        return list if list[0] == '{'
+        return _to_string(list) if list[0] == '{'
         # replace variable
         l = list.gsub(/\$\{(.+?)\}|\$([\w()]+)/) do
           v = Regexp.last_match(Regexp.last_match(1) ? 1 : 2)
@@ -31,12 +33,32 @@ module Tcl
             raise(TclVariableNotFoundError, vv.to_s, "variable isn't array") unless @variables[v].is_a?(Hash)
             @variables[v][h].to_s
           else
-            raise(TclVariableNotFoundError, v.to_s, "variable is array") if @variables[v].is_a?(Hash)
+            raise(TclVariableNotFoundError, v.to_s, 'variable is array') if @variables[v].is_a?(Hash)
             @variables[v]
           end
         end
         # replace commands
-        l.gsub(/\[(.+)\]/) { parse(Regexp.last_match(1)) }
+        l = l.gsub(/\[(.+)\]/) { parse(Regexp.last_match(1)) }
+        _to_string(l)
+      end
+
+      private
+
+      def _to_string(str)
+        if str[0] == '{' && str[-1] == '}'
+          str = str[1..-2]
+        elsif str[0] == '"' && str[-1] == '"'
+          str = str[1..-2]
+        end
+        str
+      end
+
+      def _to_list(str)
+        if str == '' || str.match(/\s/)
+          "{#{str}}"
+        else
+          str
+        end
       end
     end
   end

@@ -2,7 +2,7 @@ module Tcl
   module Ruby
     class ListArray
       Array.public_instance_methods(false).each do |name|
-        next if name == '<<'
+        next if name == '<<' || name == 'to_a'
         define_method(name) do |*args, &block|
           @ary.send(name, *args, &block)
         end
@@ -13,12 +13,13 @@ module Tcl
       end
 
       def <<(buffer)
-        raise(ParseError, 'extra characters after close-quote') if
-          buffer[0] == '"' && buffer[-1] != '"'
-        raise(ParseError, 'extra characters after close-brace') if
-          buffer[0] == '{' && buffer[-1] != '}'
-        @ary << buffer
+        @ary << buffer.dup unless buffer.empty?
+        buffer.clear
         self
+      end
+
+      def to_a
+        @ary
       end
     end
   end

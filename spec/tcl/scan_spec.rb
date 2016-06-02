@@ -59,8 +59,25 @@ RSpec.describe Tcl::Ruby::Interpreter do
         expect { f.parse('set a {bc}d') }.to raise_error P
         expect { f.parse('set a {bc}{b}') }.to raise_error P
       end
-      it 'should not raise error on unmatched parenthesises' do
+      it 'should not raise error on unmatched braces' do
         expect { f.parse('set A b{c') }.not_to raise_error
+      end
+      it 'should not raise error on unmatched quotes' do
+        expect { f.parse('set A b"c') }.not_to raise_error
+      end
+      it 'should raise error when extra-characters after close-quote on to_list' do
+        f.parse('set A {"b"c}')
+        expect { f.parse('llength $A') }.to raise_error P
+      end
+      it 'should raise error when extra-characters after close-brace on to_list' do
+        f.parse('set A "{b}c"')
+        expect { f.parse('llength $A') }.to raise_error P
+      end
+      it 'should raise error when sequence is crossed on quate and brackets' do
+        expect { f.parse('set a "bf[a"]') }.to raise_error P
+      end
+      it 'should act with all list wrapped by braces' do
+        expect(f.parse('{set} {a} {1}')).to eq '1'
       end
     end
   end

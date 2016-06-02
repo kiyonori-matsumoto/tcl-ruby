@@ -1,14 +1,13 @@
 require 'spec_helper.rb'
 
 RSpec.describe Tcl::Ruby::Interpreter do
-  describe '#parse' do
-    describe 'array set, get' do
-      let(:f) { Tcl::Ruby::Interpreter.new }
-      before(:each) do
-        f.parse('array set ary {a b}')
-        f.parse('set nonary {a b}')
-      end
-
+  describe '#parse array' do
+    let(:f) { Tcl::Ruby::Interpreter.new }
+    before(:each) do
+      f.parse('array set ary {a b}')
+      f.parse('set nonary {a b}')
+    end
+    describe 'set, get' do
       it 'should create new array' do
         expect(f.parse('array get ary a')).to eq 'a b'
       end
@@ -24,6 +23,7 @@ RSpec.describe Tcl::Ruby::Interpreter do
         [%w(a b), %w(c d), %w(e f), %w(g h)].each do |a|
           expect(f.variables('ary')[a[0]]).to eq a[1]
         end
+        expect(f.parse('array get ary')).to eq 'a b c d e f g h'
       end
       it 'should return null-list with not-existed key' do
         expect(f.parse('array get ary c')).to eq ''
@@ -46,6 +46,32 @@ RSpec.describe Tcl::Ruby::Interpreter do
       it 'should raise error on adding array element to non-array variable' do
         expect { f.parse('array set nonary {a b}') }
           .to raise_error Tcl::Ruby::CommandError
+      end
+    end
+
+    describe 'exists' do
+      it 'should return 1 to array' do
+        expect(f.parse('array exists ary')).to eq '1'
+      end
+      it 'should return 0 to non-array' do
+        expect(f.parse('array exists nonary')).to eq '0'
+        expect(f.parse('array exists undef')).to eq '0'
+      end
+    end
+
+    describe 'unset' do
+      it 'should unset array' do
+        expect(f.parse('array unset ary')).to eq ''
+        expect { f.variables('ary') }.to raise_error(
+          Tcl::Ruby::TclVariableNotFoundError)
+      end
+      it 'should unset array with pattern' do
+        expect(f.parse('array unset ary a')).to eq ''
+        expect(f.variables('ary')).not_to have_key('a')
+      end
+      it 'should not unset non-array' do
+        expect(f.parse('array unset nonary')).to eq ''
+        expect(f.variables('nonary')).to eq 'a b'
       end
     end
   end

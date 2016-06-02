@@ -18,7 +18,7 @@ RSpec.describe Tcl::Ruby::Interpreter do
       end
       it 'should act with 0' do
         expect(f.parse('if 1 [list set A 1]')).to eq '1'
-        pending('0 is true on ruby')
+        # pending('0 is true on ruby')
         expect(f.parse('if 0 {set B 1}')).to be_nil
       end
       it 'should act correctly on if-else statement' do
@@ -54,6 +54,13 @@ RSpec.describe Tcl::Ruby::Interpreter do
       end
     end
 
+    describe 'incr' do
+      it 'should act with undefined variable' do
+        expect(f.parse('incr undefined')).to eq '1'
+        expect(f.variables('undefined')).to eq '1'
+      end
+    end
+
     describe 'foreach' do
       before(:each) do
         f.parse('set A {A B C D}')
@@ -76,6 +83,13 @@ RSpec.describe Tcl::Ruby::Interpreter do
       it 'should act' do
         f.parse('while {$B < 10} {incr B}')
         expect(f.variables('B')).to eq '10'
+      end
+    end
+
+    describe 'proc' do
+      xit 'should act' do
+        f.parse('proc aaaa {} { puts zzzz }')
+        expect { f.parse('aaaa') }.to output("zzzz\n").to_stdout
       end
     end
   end

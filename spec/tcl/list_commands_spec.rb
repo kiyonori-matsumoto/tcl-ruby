@@ -29,7 +29,7 @@ RSpec.describe Tcl::Ruby::Interpreter do
 
     it 'returns index of list' do
       expect(f.parse('lindex {A B C} 1')).to eq 'B'
-      expect(f.parse('lindex {A {B C} D} 1')).to eq '{B C}'
+      expect(f.parse('lindex {A {B C} D} 1')).to eq 'B C'
     end
 
     it 'returns nothing out of list' do
@@ -37,8 +37,8 @@ RSpec.describe Tcl::Ruby::Interpreter do
     end
 
     it 'returns list element on various sample' do
-      expect(f.parse('lindex {a b c}')).to eq '{a b c}'
-      expect(f.parse('lindex {a b c} {}')).to eq '{a b c}'
+      expect(f.parse('lindex {a b c}')).to eq 'a b c'
+      expect(f.parse('lindex {a b c} {}')).to eq 'a b c'
       expect(f.parse('lindex {a b c} 0')).to eq 'a'
       expect(f.parse('lindex {a b c} 2')).to eq 'c'
       expect(f.parse('lindex {a b c} end')).to eq 'c'
