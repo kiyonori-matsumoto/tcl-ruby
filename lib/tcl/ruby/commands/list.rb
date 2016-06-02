@@ -1,9 +1,11 @@
 module Tcl
   module Ruby
-    class TclField
+    class Interpreter
+      private
+
       def ___llength(arg)
         raise(CommandError, 'llength list') if arg.size != 1
-        parse(delete_parenthesis(arg[0]), true).size
+        parse(arg[0], true).size
       end
 
       def ___list(arg)
@@ -13,13 +15,13 @@ module Tcl
       def ___lindex(arg)
         if arg[1].nil?
           arg[0]
-        elsif arg[1] == '{}'
+        elsif arg[1] == ''
           arg[0]
         else
           l = arg[0]
           arg[1..-1].each do |as|
-            parse(delete_parenthesis(as), true).each do |a|
-              l = parse(delete_parenthesis(l), true)
+            parse(as, true).each do |a|
+              l = parse(l, true)
               a.gsub!(/end/, (l.size - 1).to_s)
               pos = eval(a)
               if (0...l.size).cover?(pos)
@@ -36,14 +38,15 @@ module Tcl
       def ___join(arg)
         raise(CommandError, 'join list joinString?') unless (1..2).cover? arg.size
         separator = arg[1] || ' '
-        parse(delete_parenthesis(arg[0]), true).join(delete_parenthesis(separator))
+        parse(arg[0], true).join(separator)
       end
 
       def ___linsert(arg)
         raise(CommandError, 'linsert list insertposition elements') unless arg.size >= 3
-        l = parse(delete_parenthesis(arg[0]), true)
+        l = parse(arg[0], true)
         l.insert(arg[1].to_i, *arg[2..-1])
-        "{#{l.join(' ')}}"
+        # "{#{l.join(' ')}}"
+        l.to_list
       end
 
       def ___lrange(arg)
@@ -51,9 +54,9 @@ module Tcl
         first = arg[1].to_i
         first = 0 if first < 0
         last = arg[2].to_i
-        l = parse(delete_parenthesis(arg[0]), true)
+        l = parse(arg[0], true)
         if first <= last
-          "{#{l[first..last].join(' ')}}"
+          l[first..last].to_list
         else
           ''
         end
@@ -62,7 +65,7 @@ module Tcl
       def ___lappend(arg)
         l = parse(variables(arg[0]), true)
         l.push(*arg[1..-1])
-        @variables[arg[0]] = "{#{l.join(' ')}}"
+        @variables[arg[0]] = l.to_list
       end
     end
   end

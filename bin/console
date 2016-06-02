@@ -8,7 +8,9 @@ require 'tcl/ruby'
 
 # (If you use this, don't forget to add pry to your Gemfile!)
 require 'pry'
-Pry.start
+f = Tcl::Ruby::Interpreter.new
+# Pry.start
+binding.pry
 
 # require "irb"
 # IRB.start

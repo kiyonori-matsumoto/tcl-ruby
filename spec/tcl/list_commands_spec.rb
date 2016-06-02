@@ -1,8 +1,8 @@
 require 'spec_helper.rb'
 
-RSpec.describe Tcl::Ruby::TclField do
+RSpec.describe Tcl::Ruby::Interpreter do
   describe 'execution of list commands' do
-    let(:f) { Tcl::Ruby::TclField.new }
+    let(:f) { Tcl::Ruby::Interpreter.new }
     it 'creates list' do
       str = 'list A B C'
       expect(f.parse(str)).to eq 'A B C'
@@ -29,7 +29,7 @@ RSpec.describe Tcl::Ruby::TclField do
 
     it 'returns index of list' do
       expect(f.parse('lindex {A B C} 1')).to eq 'B'
-      expect(f.parse('lindex {A {B C} D} 1')).to eq '{B C}'
+      expect(f.parse('lindex {A {B C} D} 1')).to eq 'B C'
     end
 
     it 'returns nothing out of list' do
@@ -37,8 +37,8 @@ RSpec.describe Tcl::Ruby::TclField do
     end
 
     it 'returns list element on various sample' do
-      expect(f.parse('lindex {a b c}')).to eq '{a b c}'
-      expect(f.parse('lindex {a b c} {}')).to eq '{a b c}'
+      expect(f.parse('lindex {a b c}')).to eq 'a b c'
+      expect(f.parse('lindex {a b c} {}')).to eq 'a b c'
       expect(f.parse('lindex {a b c} 0')).to eq 'a'
       expect(f.parse('lindex {a b c} 2')).to eq 'c'
       expect(f.parse('lindex {a b c} end')).to eq 'c'
@@ -55,17 +55,20 @@ RSpec.describe Tcl::Ruby::TclField do
     end
 
     it 'returns inserted list' do
-      expect(f.parse('linsert {A B C} 2 D')).to eq '{A B D C}'
-      expect(f.parse('linsert {A  B  C} 1 D E')).to eq '{A D E B C}'
-      expect { f.parse('linsert {A B C} 1') }.to raise_error Tcl::Ruby::CommandError
+      expect(f.parse('linsert {A B C} 2 D')).to eq 'A B D C'
+      expect(f.parse('linsert {A  B  C} 1 D E')).to eq 'A D E B C'
+      expect(f.parse('linsert {a b {c d} e} 1 {d e}')).to eq 'a {d e} b {c d} e'
+      expect { f.parse('linsert {A B C} 1') }
+        .to raise_error Tcl::Ruby::CommandError
     end
 
     it 'returns ranged list' do
-      expect(f.parse('lrange {A B C D} 0 2')).to eq '{A B C}'
-      expect(f.parse('lrange {A B C D} -1 1')).to eq '{A B}'
-      expect(f.parse('lrange {A  B  ZED  {D T}} 2 6')).to eq '{ZED {D T}}'
+      expect(f.parse('lrange {A B C D} 0 2')).to eq 'A B C'
+      expect(f.parse('lrange {A B C D} -1 1')).to eq 'A B'
+      expect(f.parse('lrange {A  B  ZED  {D T}} 2 6')).to eq 'ZED {D T}'
       expect(f.parse('lrange {A B C} 2 1')).to eq ''
-      expect { f.parse('lrange {A B C} 2') }.to raise_error Tcl::Ruby::CommandError
+      expect { f.parse('lrange {A B C} 2') }
+        .to raise_error Tcl::Ruby::CommandError
     end
   end
 end

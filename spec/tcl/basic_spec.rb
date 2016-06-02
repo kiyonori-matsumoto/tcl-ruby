@@ -1,8 +1,8 @@
 require 'spec_helper.rb'
 
-RSpec.describe 'TclField' do
+RSpec.describe Tcl::Ruby::Interpreter do
   describe '#parse' do
-    let(:f) { Tcl::Ruby::TclField.new }
+    let(:f) { Tcl::Ruby::Interpreter.new }
     describe 'comment' do
       it 'should do nothing' do
         expect(f.parse('# AAAAA')).to be_nil
@@ -14,15 +14,21 @@ RSpec.describe 'TclField' do
         f.parse('set B 2')
       end
       it 'should act correctly' do
-        expect(f.parse('if {1 == 1} {set A 1}')).to eq '1'
+        expect(f.parse('if "$B==2" {set A 1}')).to eq '1'
       end
-
+      it 'should act with 0' do
+        expect(f.parse('if 1 [list set A 1]')).to eq '1'
+        # pending('0 is true on ruby')
+        expect(f.parse('if 0 {set B 1}')).to be_nil
+      end
       it 'should act correctly on if-else statement' do
         expect(f.parse('if {$B == 3} {set A 1} else {set A 2}')).to eq '2'
       end
-
       it 'should act correctly on if-elseif-else statement' do
         expect(f.parse('if {$B==3} then {set A 1} elseif {$B==2} then {set A 2} {set A 3}')).to eq '2'
+      end
+      it 'should act correctly on if-elseif-elseif-else statement' do
+        expect(f.parse('if {$B==4} {set A 1} elseif {$B==3} {set A 2} elseif {$B==2} {set A 3} else {set A 4}')).to eq '3'
       end
     end
 
@@ -48,6 +54,13 @@ RSpec.describe 'TclField' do
       end
     end
 
+    describe 'incr' do
+      it 'should act with undefined variable' do
+        expect(f.parse('incr undefined')).to eq '1'
+        expect(f.variables('undefined')).to eq '1'
+      end
+    end
+
     describe 'foreach' do
       before(:each) do
         f.parse('set A {A B C D}')
@@ -70,6 +83,28 @@ RSpec.describe 'TclField' do
       it 'should act' do
         f.parse('while {$B < 10} {incr B}')
         expect(f.variables('B')).to eq '10'
+      end
+    end
+
+    describe 'proc' do
+      it 'should act' do
+        f.parse('proc aaaa {} { puts zzzz }')
+        expect { f.parse('aaaa') }.to output("zzzz\n").to_stdout
+      end
+      it 'should act with arguments' do
+        f.parse('proc aaaa {z} {global a; set a $z}')
+        expect(f.parse('aaaa ninja')).to eq 'ninja'
+        expect(f.variables('a')).to eq 'ninja'
+      end
+      it 'should not act with wrong # of arguments' do
+        f.parse('proc aaaa {z} { global a; set a $z}')
+        expect { f.parse('aaaa') }.to raise_error Tcl::Ruby::TclArgumentError
+        expect { f.parse('aaaa 1 2') }
+          .to raise_error Tcl::Ruby::TclArgumentError
+      end
+      it 'should return varue' do
+        f.parse('proc aaaa {} { return 100 }')
+        expect(f.parse('aaaa')).to eq '100'
       end
     end
   end
