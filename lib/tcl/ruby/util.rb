@@ -3,6 +3,8 @@ module Tcl
     class Interpreter
       def initialize
         @variables = {}
+        @global = @variables
+        @v_stack = []
         @hooks = {}
         @proc = {}
       end

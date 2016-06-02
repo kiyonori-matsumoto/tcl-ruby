@@ -83,6 +83,10 @@ module Tcl
         throw :continue
       end
 
+      def ___return(arg)
+        throw(:return, arg[0])
+      end
+
       def ___incr(arg)
         raise(TclArgumentError, 'incr varName ?increment?') unless (1..2).cover?(arg.size)
         incr = (arg[1]) ? arg[1].to_i : 1
@@ -96,6 +100,14 @@ module Tcl
       def ___proc(arg)
         raise(TclArgumentError, 'proc name args body') unless arg.size == 3
         @proc[arg[0]] = arg[1..2]
+      end
+
+      def ___global(arg)
+        @variables[:___global] ||= []
+        arg.each do |v|
+          @variables[:___global] << v
+          @variables[v] = @global[v] if @global
+        end
       end
       # define_method('___#') { |_p| nil }
     end

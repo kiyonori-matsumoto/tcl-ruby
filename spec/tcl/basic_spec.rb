@@ -87,9 +87,24 @@ RSpec.describe Tcl::Ruby::Interpreter do
     end
 
     describe 'proc' do
-      xit 'should act' do
+      it 'should act' do
         f.parse('proc aaaa {} { puts zzzz }')
         expect { f.parse('aaaa') }.to output("zzzz\n").to_stdout
+      end
+      it 'should act with arguments' do
+        f.parse('proc aaaa {z} {global a; set a $z}')
+        expect(f.parse('aaaa ninja')).to eq 'ninja'
+        expect(f.variables('a')).to eq 'ninja'
+      end
+      it 'should not act with wrong # of arguments' do
+        f.parse('proc aaaa {z} { global a; set a $z}')
+        expect { f.parse('aaaa') }.to raise_error Tcl::Ruby::TclArgumentError
+        expect { f.parse('aaaa 1 2') }
+          .to raise_error Tcl::Ruby::TclArgumentError
+      end
+      it 'should return varue' do
+        f.parse('proc aaaa {} { return 100 }')
+        expect(f.parse('aaaa')).to eq '100'
       end
     end
   end
