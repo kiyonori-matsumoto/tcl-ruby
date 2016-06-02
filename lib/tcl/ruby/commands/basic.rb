@@ -1,8 +1,11 @@
 module Tcl
   module Ruby
-    class TclField
+    class Interpreter
+      private
+
       def ___set(arg)
-        raise(CommandError, 'set variable [val]') unless (1..2).cover? arg.size
+        raise(TclArgumentError, 'set variable ?newValue?') unless
+          (1..2).cover? arg.size
         @variables[arg[0]] = arg[1] if arg.size == 2
         @variables[arg[0]]
       end

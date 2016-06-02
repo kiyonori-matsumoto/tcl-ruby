@@ -1,6 +1,6 @@
 module Tcl
   module Ruby
-    class TclField
+    class Interpreter
       def initialize
         @variables = {}
         @hooks = {}
@@ -22,8 +22,13 @@ module Tcl
         delete_parenthesis(@variables[arg])
       end
 
-      def add_hook(name, block)
-        @hooks[name] = block
+      def add_hook(name, &block)
+        raise(ArgumentError, "block is not given") unless block_given?
+        @hooks[name.to_s] = block
+      end
+
+      def delete_hook(name)
+        @hooks.delete(name.to_s)
       end
     end
   end

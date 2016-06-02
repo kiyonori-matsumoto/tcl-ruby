@@ -1,8 +1,8 @@
 require 'spec_helper.rb'
 
-RSpec.describe Tcl::Ruby::TclField do
+RSpec.describe Tcl::Ruby::Interpreter do
   describe 'parse long string' do
-    let(:f) { Tcl::Ruby::TclField.new }
+    let(:f) { Tcl::Ruby::Interpreter.new }
     it 'should parse all commands inside file' do
       open('./spec/test.tcl') do |file|
         f.parse(file.read)

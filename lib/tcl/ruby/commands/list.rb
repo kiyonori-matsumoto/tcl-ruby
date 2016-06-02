@@ -1,6 +1,9 @@
 module Tcl
   module Ruby
-    class TclField
+    class Interpreter
+
+      private
+
       def ___llength(arg)
         raise(CommandError, 'llength list') if arg.size != 1
         parse(delete_parenthesis(arg[0]), true).size

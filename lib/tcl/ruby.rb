@@ -1,6 +1,8 @@
 require 'tcl/ruby/command.rb'
 require 'tcl/ruby/error.rb'
+require 'tcl/ruby/list_array.rb'
 require 'tcl/ruby/parser.rb'
 require 'tcl/ruby/util.rb'
 require 'tcl/ruby/commands/basic.rb'
 require 'tcl/ruby/commands/list.rb'
+require 'tcl/ruby/commands/array.rb'

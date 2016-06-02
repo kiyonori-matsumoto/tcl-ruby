@@ -1,8 +1,8 @@
 require 'spec_helper.rb'
 
-RSpec.describe Tcl::Ruby::TclField do
+RSpec.describe Tcl::Ruby::Interpreter do
   describe 'execution of list commands' do
-    let(:f) { Tcl::Ruby::TclField.new }
+    let(:f) { Tcl::Ruby::Interpreter.new }
     it 'creates list' do
       str = 'list A B C'
       expect(f.parse(str)).to eq 'A B C'
