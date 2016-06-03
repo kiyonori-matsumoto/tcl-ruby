@@ -1,4 +1,4 @@
-[![Code Climate](https://codeclimate.com/github/kiyonori-matsumoto/tcl-ruby/badges/gpa.svg)](https://codeclimate.com/github/kiyonori-matsumoto/tcl-ruby) [![Build Status](https://travis-ci.org/kiyonori-matsumoto/tcl-ruby.svg?branch=master)](https://travis-ci.org/kiyonori-matsumoto/tcl-ruby)
+[![Code Climate](https://codeclimate.com/github/kiyonori-matsumoto/tcl-ruby/badges/gpa.svg)](https://codeclimate.com/github/kiyonori-matsumoto/tcl-ruby) [![Build Status](https://travis-ci.org/kiyonori-matsumoto/tcl-ruby.svg?branch=master)](https://travis-ci.org/kiyonori-matsumoto/tcl-ruby) [![Gem Version](https://badge.fury.io/rb/tcl-ruby.png)](https://badge.fury.io/rb/tcl-ruby)
 
 # Tcl::Ruby
 
