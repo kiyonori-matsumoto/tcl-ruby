@@ -42,29 +42,29 @@ module Tcl
         end
       end
 
-      def analyze_brackets(b0, bl, to_list, s)
+      def analyze_brackets(_b0, bl, to_list, s)
         case bl
         when '{' then @pstack.push(:brace) if
-          @pstack[-1] != :quote
+          @pstack.last != :quote
         when '}'
-          @pstack.pop if @pstack[-1] == :brace
+          @pstack.pop if @pstack.last == :brace
           raise(ParseError, 'extra characters after close-brace') if
-            b0 == '{' && @pstack.empty? &&
+            @pstack.empty? &&
             ((to_list && !s.check(/\s|\z/)) ||
              (!to_list && !s.check(/\s|\z|;/)))
         when '[' then @pstack.push(:bracket) if
-          !to_list && @pstack[-1] != :brace
-        when ']' then @pstack.pop if !to_list && @pstack[-1] == :bracket
+          !to_list && @pstack.last != :brace
+        when ']' then @pstack.pop if !to_list && @pstack.last == :bracket
         when '"'
-          if @pstack[-1] != :brace
-            if @pstack[-1] != :quote
+          if @pstack.last != :brace
+            if @pstack.last != :quote
               @pstack.push(:quote)
             else
               @pstack.pop
+              raise(ParseError, 'extra characters after close-quote') if
+                @pstack.empty? && !s.check(/\s|\z/)
             end
           end
-          raise(ParseError, 'extra characters after close-quote') if
-            b0 == '"' && @pstack.empty? && !s.check(/\s|\z/)
         end
       end
     end
