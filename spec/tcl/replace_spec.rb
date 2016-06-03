@@ -54,7 +54,6 @@ RSpec.describe Tcl::Ruby::Interpreter do
       expect { f.parse '$A' }.to raise_error Tcl::Ruby::CommandError
     end
     it 'should act with multiple replacement' do
-      pending 'known issue'
       expect(f.parse('set A 1; set b [expr "[set A] + [set A]"]')).to eq '2'
     end
     it 'should act with complex replacement' do

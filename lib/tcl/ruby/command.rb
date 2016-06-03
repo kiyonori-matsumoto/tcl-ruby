@@ -1,3 +1,5 @@
+require 'strscan'
+
 module Tcl
   module Ruby
     class Interpreter
@@ -5,7 +7,6 @@ module Tcl
 
       def command(arg)
         return nil if arg.empty?
-        return @prev if arg[0][0] == '#' # FIXME
         arg.to_string
         arg.replace(&method(:replace))
         name = arg[0]
@@ -14,7 +15,7 @@ module Tcl
         elsif @hooks.key?(name)
           @hooks[name].call(arg[1..-1])
         elsif respond_to?("___#{name}", true)
-          @prev = send("___#{name}", arg[1..-1])
+          send("___#{name}", arg[1..-1])
         else
           raise(CommandError, "command not found, #{name}")
         end
@@ -22,10 +23,41 @@ module Tcl
 
       def replace(list)
         # replace commands
-        list = list.gsub(/\[(.+)\]/) { parse(Regexp.last_match(1)) }
+        list = replace_commands(list)
+        # list.gsub(/(?<=[^\]]*)\[(.+)\](?=[^\[]*)/) { parse(Regexp.last_match(1)) }
 
         # replace variable
         replace_variable(list)
+      end
+
+      def replace_commands(list)
+        l = list.dup
+        s = StringScanner.new(l)
+        buffer = nil
+        depth = 0
+        until s.empty?
+          if s.scan(/\\./m)
+            buffer << s[0] if buffer
+          elsif s.scan(/\[/)
+            if depth == 0
+              pos = s.pos - 1
+              buffer = ''
+            end
+            depth += 1
+            buffer << s[0]
+          elsif s.scan(/\]/)
+            depth -= 1
+            buffer << s[0]
+            if depth == 0
+              l[pos, buffer.length] = parse(buffer[1..-2]).to_s
+              s.string = l
+              buffer = nil
+            end
+          elsif s.scan(/[^\[\]\\]+/m)
+            buffer << s[0] if buffer
+          end
+        end
+        l
       end
 
       def replace_variable(elem)

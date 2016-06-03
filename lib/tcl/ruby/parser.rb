@@ -6,6 +6,10 @@ module Tcl
       BRCKTS = %w({ [ ").freeze
 
       def parse(str, to_list = false)
+        ex_char_check = lambda do |s, t|
+          (t && !s.check(/\s|\z/)) || (!t && !s.check(/\s|\z|;/))
+        end.curry
+
         str.gsub!(/\\\n\s*/, ' ')
         s = StringScanner.new(str)
         r = ListArray.new
@@ -15,6 +19,12 @@ module Tcl
         until s.empty?
           if s.scan(/\\./)
             buffer << s[0]
+          elsif s.scan(/\#/)
+            if buffer.empty? && r.empty?
+              s.scan(/.+$/) # skip till end of line
+            else
+              buffer << s[0]
+            end
           elsif !to_list && s.scan(/\r\n|\r|\n|;/)
             if @pstack.empty?
               r << buffer
@@ -27,43 +37,38 @@ module Tcl
             @pstack.empty? ? r << buffer : buffer << s[0]
           else
             buffer << s.scan(/\S/) || raise(ParserError, 'parse error')
-            analyze_brackets(buffer[0], buffer[-1], to_list, s) if
+            analyze_brackets(buffer[-1], to_list, ex_char_check[s]) if
               BRCKTS.find_index(buffer[0])
           end
         end
         r << buffer
-        raise(ParseError, "unmatched parenthesises #{@pstack}") if
-          @pstack.any?
+        raise(ParseError, 'unmatched parenthesises') if @pstack.any?
         if to_list
           r.to_string
         else
           ret = command(r) || ret
-          ret
         end
       end
 
-      def analyze_brackets(_b0, bl, to_list, s)
+      private
+
+      def analyze_brackets(bl, to_list, check)
         case bl
-        when '{' then @pstack.push(:brace) if
-          @pstack.last != :quote
+        when '{' then @pstack.push(:brace) if @pstack.last != :quote
         when '}'
           @pstack.pop if @pstack.last == :brace
           raise(ParseError, 'extra characters after close-brace') if
-            @pstack.empty? &&
-            ((to_list && !s.check(/\s|\z/)) ||
-             (!to_list && !s.check(/\s|\z|;/)))
+            @pstack.empty? && check[to_list]
         when '[' then @pstack.push(:bracket) if
           !to_list && @pstack.last != :brace
-        when ']' then @pstack.pop if !to_list && @pstack.last == :bracket
+        when ']' then @pstack.pop if @pstack.last == :bracket
         when '"'
-          if @pstack.last != :brace
-            if @pstack.last != :quote
-              @pstack.push(:quote)
-            else
-              @pstack.pop
-              raise(ParseError, 'extra characters after close-quote') if
-                @pstack.empty? && !s.check(/\s|\z/)
-            end
+          if @pstack.last == :quote
+            @pstack.pop
+            raise(ParseError, 'extra characters after close-quote') if
+              @pstack.empty? && check[to_list]
+          elsif @pstack.last != :brace
+            @pstack.push :quote
           end
         end
       end

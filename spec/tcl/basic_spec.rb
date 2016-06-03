@@ -8,7 +8,6 @@ RSpec.describe Tcl::Ruby::Interpreter do
         expect(f.parse('# AAAAA')).to be_nil
       end
       it 'act with semi-colon' do
-        pending "fixme on command.rb:7"
         expect(f.parse("set A 1; # aaaa; set A 2\n")).to eq '1'
       end
     end
