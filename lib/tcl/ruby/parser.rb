@@ -28,34 +28,21 @@ module Tcl
               buffer << s[0]
             end
           else
-            buffer <<
-              if s.scan(/{/)
-                pdepth += 1 if buffer == '' || pdepth != 0
-                s[0]
-              elsif s.scan(/}/)
-                ret = s[0]
-                pdepth -= 1 if pdepth != 0
-                raise(ParseError, 'extra characters after close-brace') if
-                  buffer[0] == '{' && pdepth == 0 &&
-                  ((to_list && !s.check(/\s|\z/)) || (!to_list && !s.check(/\s|\z|;/)))
-                ret
-              elsif !to_list && pdepth == 0 && s.scan(/\[/)
-                bdepth += 1
-                s[0]
-              elsif !to_list && pdepth == 0 && s.scan(/\]/)
-                bdepth -= 1
-                s[0]
-              elsif s.scan(/"/)
-                ret = s[0]
-                ddepth = 1 - ddepth if buffer == '' || buffer[0] == '"'
-                raise(ParseError, 'extra characters after close-quote') if
-                  buffer[0] == '"' && ddepth == 0 && !s.check(/\s|\z/)
-                ret
-              elsif s.scan(/\S/)
-                s[0]
-              else
-                raise(ParseError, "parse error #{s.rest}")
-              end
+            buffer << (b = s.scan(/\S/)) || raise(ParserError, 'parse error')
+            case b
+            when '{' then pdepth += 1 if buffer[0] == '{' || pdepth != 0
+            when '}'
+              pdepth -= 1 if pdepth != 0
+              raise(ParseError, 'extra characters after close-brace') if
+                buffer[0] == '{' && pdepth == 0 &&
+                ((to_list && !s.check(/\s|\z/)) || (!to_list && !s.check(/\s|\z|;/)))
+            # when '[' then bdepth += 1 if !to_list && pdepth == 0
+            # when ']' then bdepth -= 1 if !to_list && pdepth == 0
+            when '"'
+              ddepth = 1 - ddepth if buffer[0] == '"'
+              raise(ParseError, 'extra characters after close-quote') if
+                buffer[0] == '"' && ddepth == 0 && !s.check(/\s|\z/)
+            end
           end
         end
         r << buffer
