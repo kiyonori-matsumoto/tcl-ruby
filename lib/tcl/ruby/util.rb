@@ -10,7 +10,8 @@ module Tcl
       end
 
       def variables(arg)
-        raise(TclVariableNotFoundError, "can't read $#{arg}, no such variables") unless @variables.key?(arg)
+        raise TclVariableNotFoundError.new(arg, 'no such variables') unless
+          @variables.key?(arg)
         @variables[arg]
       end
 

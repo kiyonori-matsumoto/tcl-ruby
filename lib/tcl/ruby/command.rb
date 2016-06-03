@@ -4,6 +4,7 @@ module Tcl
       private
 
       def command(arg)
+        return nil if arg.empty?
         return @prev if arg[0][0] == '#' # FIXME
         arg.to_string
         arg.replace(&method(:replace))
@@ -29,7 +30,7 @@ module Tcl
 
       def replace_variable(elem)
         elem.gsub(/\$\{(.+?)\}|\$(\w+\(\S+?\))|\$(\w+)/) do
-          v = $1 || $2 || $3
+          v = Regexp.last_match(1) || Regexp.last_match(2) || Regexp.last_match(3)
           h = vv = nil
           if (m = v.match(/\((\S+?)\)\z/))
             h = m[1]

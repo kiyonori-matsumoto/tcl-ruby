@@ -3,56 +3,68 @@ require 'strscan'
 module Tcl
   module Ruby
     class Interpreter
+      BRCKTS = %w({ [ ").freeze
+
       def parse(str, to_list = false)
         str.gsub!(/\\\n\s*/, ' ')
         s = StringScanner.new(str)
         r = ListArray.new
-        pdepth = ddepth = bdepth = 0
+        @pstack = []
         buffer = ''
         ret = nil
         until s.empty?
           if s.scan(/\\./)
             buffer << s[0]
           elsif !to_list && s.scan(/\r\n|\r|\n|;/)
-            if pdepth == 0 && ddepth == 0 && bdepth == 0
+            if @pstack.empty?
               r << buffer
-              ret = command(r) unless r.empty?
+              ret = command(r) || ret
               r = ListArray.new
             else
               buffer << s[0]
             end
           elsif s.scan(/\s+/)
-            if pdepth == 0 && ddepth == 0 && bdepth == 0
-              r << buffer
-            else
-              buffer << s[0]
-            end
+            @pstack.empty? ? r << buffer : buffer << s[0]
           else
-            buffer << (b = s.scan(/\S/)) || raise(ParserError, 'parse error')
-            case b
-            when '{' then pdepth += 1 if buffer[0] == '{' || pdepth != 0
-            when '}'
-              pdepth -= 1 if pdepth != 0
-              raise(ParseError, 'extra characters after close-brace') if
-                buffer[0] == '{' && pdepth == 0 &&
-                ((to_list && !s.check(/\s|\z/)) || (!to_list && !s.check(/\s|\z|;/)))
-            # when '[' then bdepth += 1 if !to_list && pdepth == 0
-            # when ']' then bdepth -= 1 if !to_list && pdepth == 0
-            when '"'
-              ddepth = 1 - ddepth if buffer[0] == '"'
-              raise(ParseError, 'extra characters after close-quote') if
-                buffer[0] == '"' && ddepth == 0 && !s.check(/\s|\z/)
-            end
+            buffer << s.scan(/\S/) || raise(ParserError, 'parse error')
+            analyze_brackets(buffer[0], buffer[-1], to_list, s) if
+              BRCKTS.find_index(buffer[0])
           end
         end
         r << buffer
-        raise(ParseError, 'unmatched parenthesises') if
-        ddepth != 0 || pdepth != 0 || bdepth != 0
+        raise(ParseError, "unmatched parenthesises #{@pstack}") if
+          @pstack.any?
         if to_list
           r.to_string
         else
-          ret = command(r) unless r.empty?
+          ret = command(r) || ret
           ret
+        end
+      end
+
+      def analyze_brackets(b0, bl, to_list, s)
+        case bl
+        when '{' then @pstack.push(:brace) if
+          @pstack[-1] != :quote
+        when '}'
+          @pstack.pop if @pstack[-1] == :brace
+          raise(ParseError, 'extra characters after close-brace') if
+            b0 == '{' && @pstack.empty? &&
+            ((to_list && !s.check(/\s|\z/)) ||
+             (!to_list && !s.check(/\s|\z|;/)))
+        when '[' then @pstack.push(:bracket) if
+          !to_list && @pstack[-1] != :brace
+        when ']' then @pstack.pop if !to_list && @pstack[-1] == :bracket
+        when '"'
+          if @pstack[-1] != :brace
+            if @pstack[-1] != :quote
+              @pstack.push(:quote)
+            else
+              @pstack.pop
+            end
+          end
+          raise(ParseError, 'extra characters after close-quote') if
+            b0 == '"' && @pstack.empty? && !s.check(/\s|\z/)
         end
       end
     end
