@@ -1,11 +1,12 @@
 module Tcl
   module Ruby
     class Interpreter
+      private
+
       def command(arg)
-        return @prev if arg[0][0] == '#'
-        # return previous command result when comment statement executed
-        arg.map! { |e| replace(e) }
+        return @prev if arg[0][0] == '#' # FIXME
         arg.to_string
+        arg.replace(&method(:replace))
         name = arg[0]
         if @proc.key?(name)
           exec_proc(arg[1..-1], @proc[name])
@@ -19,28 +20,33 @@ module Tcl
       end
 
       def replace(list)
-        return list if list[0] == '{'
+        # replace commands
+        list = list.gsub(/\[(.+)\]/) { parse(Regexp.last_match(1)) }
+
         # replace variable
-        l = list.gsub(/\$\{(.+?)\}|\$([\w()]+)/) do
-          v = Regexp.last_match(Regexp.last_match(1) ? 1 : 2)
+        replace_variable(list)
+      end
+
+      def replace_variable(elem)
+        elem.gsub(/\$\{(.+?)\}|\$(\w+\(\S+?\))|\$(\w+)/) do
+          v = $1 || $2 || $3
           h = vv = nil
-          if (m = v.match(/\((\w+)\)\z/))
+          if (m = v.match(/\((\S+?)\)\z/))
             h = m[1]
             vv = v
-            v = vv.sub(/\((\w+)\)\z/, '')
+            v = vv.sub(/\((\S+?)\)\z/, '')
           end
-          raise(TclVariableNotFoundError, v.to_s, 'no such variable') unless
+          raise TclVariableNotFoundError.new(v.to_s, 'no such variable') unless
             @variables.key?(v)
           if h
-            raise(TclVariableNotFoundError, vv.to_s, "variable isn't array") unless @variables[v].is_a?(Hash)
+            raise TclVariableNotFoundError.new(vv.to_s, "variable isn't array") unless @variables[v].is_a?(Hash)
+            h = replace_variable(h)
             @variables[v][h].to_s
           else
-            raise(TclVariableNotFoundError, v.to_s, 'variable is array') if @variables[v].is_a?(Hash)
+            raise TclVariableNotFoundError.new(v.to_s, 'variable is array') if @variables[v].is_a?(Hash)
             @variables[v]
           end
         end
-        # replace commands
-        l = l.gsub(/\[(.+)\]/) { parse(Regexp.last_match(1)) }
       end
 
       def exec_proc(arg, proc_info)

@@ -8,6 +8,10 @@ RSpec.describe Tcl::Ruby::Interpreter do
       expect(f.parse(str)).to eq 'A B C'
     end
 
+    it 'creates list with null-list' do
+      expect(f.parse('set a [list {} {} {}]')).to eq '{} {} {}'
+    end
+
     it 'returns length of list' do
       str = 'llength {A B C}'
       expect(f.parse(str)).to eq 3

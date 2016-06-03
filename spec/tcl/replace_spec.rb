@@ -12,7 +12,8 @@ RSpec.describe Tcl::Ruby::Interpreter do
     end
 
     it 'is not able to get unwritten variable' do
-      expect { f.variables('B') }.to raise_error Tcl::Ruby::TclError
+      expect { f.variables('B') }
+        .to raise_error Tcl::Ruby::TclVariableNotFoundError
     end
 
     it 'should replace variables' do
@@ -46,6 +47,15 @@ RSpec.describe Tcl::Ruby::Interpreter do
     it 'should exec comand with replaced variable' do
       f.parse('set A set')
       expect { f.parse('$A') }.to raise_error(Tcl::Ruby::TclArgumentError, /set/)
+    end
+
+    it 'should not replace commands incide variables' do
+      f.parse('set A {[set B]} ; set B puts')
+      expect { f.parse '$A' }.to raise_error Tcl::Ruby::CommandError
+    end
+    it 'should act wit multiple replacement' do
+      pending 'known issue'
+      expect(f.parse('set A 1; set b [expr "[set A] + [set A]"]')).to eq '2'
     end
   end
 end

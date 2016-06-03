@@ -47,6 +47,15 @@ RSpec.describe Tcl::Ruby::Interpreter do
         expect { f.parse('array set nonary {a b}') }
           .to raise_error Tcl::Ruby::CommandError
       end
+      it 'should get array with multiple replacement' do
+        str = <<EOS
+set abc(a.b) 100
+set abc(a.c) 200
+set index c
+puts $abc(a.$index)
+EOS
+        expect { f.parse(str) }.to output("200\n").to_stdout
+      end
     end
 
     describe 'exists' do

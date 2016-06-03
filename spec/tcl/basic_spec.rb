@@ -7,6 +7,16 @@ RSpec.describe Tcl::Ruby::Interpreter do
       it 'should do nothing' do
         expect(f.parse('# AAAAA')).to be_nil
       end
+      it 'act with semi-colon' do
+        pending "fixme on command.rb:7"
+        expect(f.parse("set A 1; # aaaa; set A 2\n")).to eq '1'
+      end
+    end
+
+    describe 'set' do
+      it 'returns set-value' do
+        expect(f.parse('set a 1')).to eq '1'
+      end
     end
 
     describe 'if' do
@@ -18,7 +28,6 @@ RSpec.describe Tcl::Ruby::Interpreter do
       end
       it 'should act with 0' do
         expect(f.parse('if 1 [list set A 1]')).to eq '1'
-        # pending('0 is true on ruby')
         expect(f.parse('if 0 {set B 1}')).to be_nil
       end
       it 'should act correctly on if-else statement' do

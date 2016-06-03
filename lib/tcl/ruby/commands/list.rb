@@ -9,43 +9,39 @@ module Tcl
       end
 
       def ___list(arg)
-        arg.join(' ').to_s
+        arg.to_list
       end
 
       def ___lindex(arg)
-        if arg[1].nil?
-          arg[0]
-        elsif arg[1] == ''
-          arg[0]
-        else
-          l = arg[0]
-          arg[1..-1].each do |as|
-            parse(as, true).each do |a|
-              l = parse(l, true)
-              a.gsub!(/end/, (l.size - 1).to_s)
-              pos = eval(a)
-              if (0...l.size).cover?(pos)
-                l = l[pos]
-              else
-                return ''
-              end
-            end
+        return arg[0] if arg[1].nil? || arg[1] == ''
+        l = arg[0]
+        arg[1..-1].each do |as|
+          parse(as, true).each do |a|
+            l = parse(l, true)
+            pos = case a
+                  when /end-(\d+)/ then l.size - 1 - Regexp.last_match(1).to_i
+                  when /end/ then l.size - 1
+                  else a.to_i
+                  end
+            return '' unless (0...l.size).cover?(pos)
+            l = l[pos]
           end
-          l
         end
+        l
       end
 
       def ___join(arg)
-        raise(CommandError, 'join list joinString?') unless (1..2).cover? arg.size
+        raise(CommandError, 'join list joinString?') unless
+          (1..2).cover? arg.size
         separator = arg[1] || ' '
         parse(arg[0], true).join(separator)
       end
 
       def ___linsert(arg)
-        raise(CommandError, 'linsert list insertposition elements') unless arg.size >= 3
+        raise(CommandError, 'linsert list insertposition elements') unless
+          arg.size >= 3
         l = parse(arg[0], true)
         l.insert(arg[1].to_i, *arg[2..-1])
-        # "{#{l.join(' ')}}"
         l.to_list
       end
 

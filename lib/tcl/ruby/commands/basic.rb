@@ -6,8 +6,12 @@ module Tcl
       def ___set(arg)
         raise(TclArgumentError, 'set variable ?newValue?') unless
           (1..2).cover? arg.size
-        @variables[arg[0]] = arg[1] if arg.size == 2
-        @variables[arg[0]]
+        if (m = arg[0].match(/(\w+)\((\S+?)\)/))
+          ___array_set([m[1], "{#{m[2]}} {#{arg[1]}}"])
+        else
+          @variables[arg[0]] = arg[1] if arg.size == 2
+          @variables[arg[0]]
+        end
       end
 
       def ___expr(arg)
@@ -28,7 +32,7 @@ module Tcl
       end
 
       def ___for(arg)
-        raise(CommandError, 'for start test next body') unless arg.size == 4
+        raise(TclArgumentError, 'for start test next body') unless arg.size == 4
         parse(arg[0])
         catch(:break) do
           while eval(replace(arg[1]))
@@ -48,17 +52,14 @@ module Tcl
           list << parse(arg[1], true)
           arg.shift(2)
         end
-        body = arg[0]
         catch(:break) do
           while list.any?(&:any?)
             # assign variables
             varlist.each_with_index do |v, idx|
-              v.each do |vv|
-                @variables[vv] = list[idx].shift || ''
-              end
+              v.each { |vv| @variables[vv] = list[idx].shift || '' }
             end
             catch(:continue) do
-              parse(body)
+              parse(arg[0])
             end
           end
         end
@@ -88,7 +89,8 @@ module Tcl
       end
 
       def ___incr(arg)
-        raise(TclArgumentError, 'incr varName ?increment?') unless (1..2).cover?(arg.size)
+        raise(TclArgumentError, 'incr varName ?increment?') unless
+          (1..2).cover?(arg.size)
         incr = (arg[1]) ? arg[1].to_i : 1
         @variables[arg[0]] = ((@variables[arg[0]] || 0).to_i + incr).to_s
       end

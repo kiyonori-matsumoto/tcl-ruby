@@ -4,14 +4,15 @@ module Tcl
   module Ruby
     class Interpreter
       def parse(str, to_list = false)
+        str.gsub!(/\\\n\s*/, ' ')
         s = StringScanner.new(str)
         r = ListArray.new
         pdepth = ddepth = bdepth = 0
         buffer = ''
         ret = nil
         until s.empty?
-          if s.scan(/\\./m)
-            buffer << s[0] unless s[0][1] =~ /\s/
+          if s.scan(/\\./)
+            buffer << s[0]
           elsif !to_list && s.scan(/\r\n|\r|\n|;/)
             if pdepth == 0 && ddepth == 0 && bdepth == 0
               r << buffer
@@ -29,20 +30,20 @@ module Tcl
           else
             buffer <<
               if s.scan(/{/)
-                # pdepth += 1 if ddepth == 0
                 pdepth += 1 if buffer == '' || pdepth != 0
                 s[0]
               elsif s.scan(/}/)
-                ret = s[0] # pdepth -= 1 if ddepth == 0
+                ret = s[0]
                 pdepth -= 1 if pdepth != 0
                 raise(ParseError, 'extra characters after close-brace') if
-                  buffer[0] == '{' && pdepth == 0 && !s.check(/\s|\z/)
+                  buffer[0] == '{' && pdepth == 0 &&
+                  ((to_list && !s.check(/\s|\z/)) || (!to_list && !s.check(/\s|\z|;/)))
                 ret
-              elsif !to_list && s.scan(/\[/)
-                bdepth += 1 if pdepth == 0
+              elsif !to_list && pdepth == 0 && s.scan(/\[/)
+                bdepth += 1
                 s[0]
-              elsif !to_list && s.scan(/\]/)
-                bdepth -= 1 if pdepth == 0
+              elsif !to_list && pdepth == 0 && s.scan(/\]/)
+                bdepth -= 1
                 s[0]
               elsif s.scan(/"/)
                 ret = s[0]

@@ -23,19 +23,22 @@ Or install it yourself as:
 ## Usage
 
 Instanciate Interpreter
+
 ```ruby
-f = Interpreter.new
+f = Tcl::Ruby::Interpreter.new
 ```
 Parse commands you want to
+
 ```ruby
 f.parse('llength {A B C D}')
-=> 4
+# => 4
 ```
 You can get variables with Interpreter#variables
+
 ```ruby
 f.parse('set A 123')
 f.variables('A')
-=> '123'
+# => '123'
 ```
 
 ## Development

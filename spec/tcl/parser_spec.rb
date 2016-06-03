@@ -2,7 +2,7 @@ require 'spec_helper.rb'
 
 RSpec.describe Tcl::Ruby::Interpreter do
   describe '#parse' do
-    describe 'initialized with "to_list = true"' do
+    describe 'parser for create list' do
       let(:tclp) { Tcl::Ruby::Interpreter.new }
       it 'is able to parse normal' do
         str = 'set A B'
@@ -78,6 +78,9 @@ RSpec.describe Tcl::Ruby::Interpreter do
       end
       it 'should act with all list wrapped by braces' do
         expect(f.parse('{set} {a} {1}')).to eq '1'
+      end
+      it 'does accept semi-colon just after close-brace' do
+        expect { f.parse('set a {1};') }.not_to raise_error
       end
     end
   end

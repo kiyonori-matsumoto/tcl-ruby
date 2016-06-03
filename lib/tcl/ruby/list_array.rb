@@ -2,7 +2,6 @@ module Tcl
   module Ruby
     class ListArray
       Array.public_instance_methods(false).each do |name|
-        next if name == '<<'
         define_method(name) do |*args, &block|
           @ary.send(name, *args, &block)
         end
@@ -19,12 +18,20 @@ module Tcl
       end
 
       def to_string
+        @p = @ary.map { |e| e[0] == '{' }
         @ary.map! { |e| _to_string(e) }
         self
       end
 
       def to_list
         @ary.map { |e| _to_list(e) }.join(' ')
+      end
+
+      def replace
+        @ary.size.times do |i|
+          @ary[i] = yield(@ary[i]) unless @p[i]
+        end
+        self
       end
 
       def map!(&block)
