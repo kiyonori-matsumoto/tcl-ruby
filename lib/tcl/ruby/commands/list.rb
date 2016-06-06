@@ -18,16 +18,11 @@ module Tcl
         arg[1..-1].each do |as|
           parse(as, true).each do |a|
             l = parse(l, true)
-            pos = case a
-                  when /end-(\d+)/ then l.size - 1 - Regexp.last_match(1).to_i
-                  when /end/ then l.size - 1
-                  else a.to_i
-                  end
-            return '' unless (0...l.size).cover?(pos)
+            pos = parse_index_format(a)
             l = l[pos]
           end
         end
-        l
+        l || ''
       end
 
       def ___join(arg)

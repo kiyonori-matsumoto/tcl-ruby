@@ -68,6 +68,10 @@ module Tcl
         end
       end
 
+      def to_h
+        Hash[@ary.each_slice(2).to_a]
+      end
+
       protected
 
       attr_accessor :ary
