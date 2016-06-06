@@ -114,6 +114,10 @@ RSpec.describe Tcl::Ruby::Interpreter do
         f.parse('proc aaaa {} { return 100 }')
         expect(f.parse('aaaa')).to eq '100'
       end
+      it 'should act with multi_globals' do
+        f.parse('proc aaaa {z} { if {$z == 1} { return 1 }; global a; incr a [aaaa [expr $z - 1]]; return $a }')
+        expect(f.parse('aaaa 10')).to eq '256'
+      end
     end
   end
 end

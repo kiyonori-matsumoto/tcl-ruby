@@ -9,10 +9,17 @@ module Tcl
 
       def initialize
         @ary = []
+        @brackets = []
       end
 
       def clear
         @ary = []
+        @brackets = []
+      end
+
+      def bracket_add(val)
+        @brackets[@ary.size] ||= []
+        @brackets[@ary.size] << val
       end
 
       def <<(buffer)
@@ -32,7 +39,10 @@ module Tcl
       end
 
       def replace
-        @ary.map! { |m| m.brace? ? m : yield(m) }
+        @ary.size.times do |n|
+          @ary[n] = yield(@ary[n]) unless @ary[n].brace?
+        end
+        # @ary.map! { |m| m.brace? ? m : yield(m) }
         self
       end
 

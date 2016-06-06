@@ -5,10 +5,10 @@ module Tcl
     class Interpreter
       private
 
-      def command(arg)
-        ret = nil;
-        # cmds.each do |arg|
-          return nil if arg.empty?
+      def command(cmds)
+        ret = nil
+        cmds.each do |arg|
+          next if arg.empty?
           arg.replace(&method(:replace))
           name = "___#{arg[0]}"
           if @proc.key?(arg[0]) then ret = exec_proc(arg[1..-1], @proc[arg[0]])
@@ -17,7 +17,7 @@ module Tcl
           else
             raise(CommandError, "command not found, #{arg[0]}")
           end
-        # end
+        end
         ret
       end
 
@@ -85,7 +85,7 @@ module Tcl
       def exec_proc(arg, proc_info)
         proc_arg = parse(proc_info[0], true)
         raise(TclArgumentError, proc_arg.to_s) if proc_arg.size != arg.size
-        @variables[:___global].each do |v| # FIXME: Buggy
+        @variables[:___global].each do |v| # backup globals
           @global[v] = @variables[v]
         end if @variables.key?(:___global)
         @v_stack.push(@variables)
@@ -96,10 +96,13 @@ module Tcl
         ret = catch(:return) do
           parse(proc_info[1])
         end
-        @variables[:___global].each do |v| # FIXME: Buggy
+        @variables[:___global].each do |v| # write back
           @global[v] = @variables[v]
         end if @variables.key?(:___global)
         @variables = @v_stack.pop
+        @variables[:___global].each do |v| # re-copy global
+          @variables[v] = @global[v]
+        end if @variables.key?(:___global)
         ret
       end
     end

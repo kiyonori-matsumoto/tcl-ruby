@@ -10,28 +10,24 @@ module Tcl
       def parse(str, to_list = false)
         str << "\n"
         str.gsub!(/\\\n\s*/, ' ') # replace back-slash & linebreak & extra ws
-        s = StringScanner.new(str)
-        r = ListArray.new
+        @s = StringScanner.new(str)
+        @list_array = ListArray.new
         @pstack = [] # stack for brace, bracket, quote
-        buffer = '' # ListElement.new('')'' # buffer for list element
-        ret = nil # return value
-        # rr = []
-        until s.empty?
-          if s.scan(/\\./) then buffer << s[0]
-          elsif s.scan(/\#/) then parse_comments(s[0], buffer, r, s)
-          elsif !to_list && s.scan(/\r\n|\r|\n|;/)
-            ret = parse_command_ends(s[0], buffer, r) || ret
-            # parse_command_ends(s[0], buffer, r, rr)
-            # r = ListArray.new
-          elsif s.scan(/\s/) then parse_blanks(s[0], buffer, r)
-          elsif s.scan(/\S/)
-            buffer << s[0]
-            analyze_parentheses(buffer[-1], to_list, EX_CHAR_CHECK[s]) if
-              buffer.parenthesis?
+        @buffer = '' # ListElement.new('')'' # buffer for list element
+        @commands = []
+        until @s.empty?
+          if @s.scan(/\\./) then @buffer << @s[0]
+          elsif @s.scan(/\#/) then parse_comments
+          elsif !to_list && @s.scan(/\r\n|\r|\n|;/) then parse_command_ends
+          elsif @s.scan(/\s/) then parse_blanks
+          elsif @s.scan(/\S/)
+            @buffer << @s[0]
+            analyze_parentheses(to_list, EX_CHAR_CHECK[@s]) if
+              @buffer.parenthesis?
           end
         end
         check_pstack
-        to_list ? r.to_string : ret
+        to_list ? @list_array.to_string : command(@commands)
       end
 
       private
@@ -40,29 +36,27 @@ module Tcl
         raise(ParseError, "unmatched #{@pstack.last}s") if @pstack.any?
       end
 
-      def parse_command_ends(bl, buffer, r)
+      def parse_command_ends
+        bl = @s[0]
         if @pstack.empty?
-          r << buffer
-          r.to_string
-          ret = command(r)
-          # rr << r
-          r.clear
-          # r = ListArray.new
-          ret
+          @list_array << @buffer
+          @list_array.to_string
+          @commands << @list_array.dup
+          @list_array.clear
         else
-          buffer << bl
+          @buffer << bl
         end
       end
 
-      def parse_blanks(bl, buffer, r)
-        @pstack.empty? ? r << buffer : buffer << bl
+      def parse_blanks
+        @pstack.empty? ? @list_array << @buffer : @buffer << @s[0]
       end
 
-      def parse_comments(bl, buffer, r, s)
-        if buffer.empty? && r.empty?
-          s.scan(/.+$/)
+      def parse_comments
+        if @buffer.empty? && @list_array.empty?
+          @s.scan(/.+$/)
         else
-          buffer << bl
+          @buffer << @s[0]
         end
       end
 
@@ -76,33 +70,34 @@ module Tcl
         end
       end
 
-      def analyze_braces(bl, to_list, extra_characters_check)
-        if bl == '{'
+      def analyze_braces(to_list, extra_characters_check)
+        if @buffer[-1] == '{'
           @pstack.push(:brace) if @pstack.last != :quote
         else
           matched_parentheses(:brace, extra_characters_check[to_list])
         end
       end
 
-      def analyze_quotes(_bl, to_list, extra_characters_check)
+      def analyze_quotes(to_list, extra_characters_check)
         unless matched_parentheses(:quote, extra_characters_check[to_list])
           @pstack.push :quote if @pstack.last != :brace
         end
       end
 
-      def analyze_brackets(bl)
-        if bl == '[' && @pstack.last != :brace
+      def analyze_brackets
+        if @buffer[-1] == '[' && @pstack.last != :brace
           @pstack.push :bracket
         elsif @pstack.last == :bracket
           @pstack.pop
         end
       end
 
-      def analyze_parentheses(bl, to_list, extra_characters_check)
+      def analyze_parentheses(to_list, extra_characters_check)
+        bl = @buffer[-1]
         case bl
-        when '{', '}' then analyze_braces(bl, to_list, extra_characters_check)
-        when '[', ']' then analyze_brackets(bl) unless to_list
-        when '"' then analyze_quotes(bl, to_list, extra_characters_check)
+        when '{', '}' then analyze_braces(to_list, extra_characters_check)
+        when '[', ']' then analyze_brackets unless to_list
+        when '"' then analyze_quotes(to_list, extra_characters_check)
         end
       end
     end
