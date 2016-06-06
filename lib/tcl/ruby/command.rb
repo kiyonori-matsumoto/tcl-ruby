@@ -6,15 +6,19 @@ module Tcl
       private
 
       def command(arg)
-        return nil if arg.empty?
-        arg.replace(&method(:replace))
-        name = "___#{arg[0]}"
-        if @proc.key?(arg[0]) then exec_proc(arg[1..-1], @proc[arg[0]])
-        elsif @hooks.key?(arg[0]) then @hooks[arg[0]].call(arg[1..-1])
-        elsif respond_to?(name, true) then send(name, arg[1..-1])
-        else
-          raise(CommandError, "command not found, #{arg[0]}")
-        end
+        ret = nil;
+        # cmds.each do |arg|
+          return nil if arg.empty?
+          arg.replace(&method(:replace))
+          name = "___#{arg[0]}"
+          if @proc.key?(arg[0]) then ret = exec_proc(arg[1..-1], @proc[arg[0]])
+          elsif @hooks.key?(arg[0]) then ret = @hooks[arg[0]].call(arg[1..-1])
+          elsif respond_to?(name, true) then ret = send(name, arg[1..-1])
+          else
+            raise(CommandError, "command not found, #{arg[0]}")
+          end
+        # end
+        ret
       end
 
       def replace(list)
@@ -57,7 +61,7 @@ module Tcl
       end
 
       def replace_variable(elem)
-        elem.gsub(/\$\{(.+?)\}|\$(\w+\([^\s)]+\))|\$(\w+)/) do |_|
+        elem.gsub!(/\$\{(.+?)\}|\$(\w+\([^\s)]+\))|\$(\w+)/) do |_|
           v = Regexp.last_match(1) || Regexp.last_match(2) ||
               Regexp.last_match(3)
           h = nil
@@ -75,6 +79,7 @@ module Tcl
             @variables[v]
           end
         end
+        elem
       end
 
       def exec_proc(arg, proc_info)

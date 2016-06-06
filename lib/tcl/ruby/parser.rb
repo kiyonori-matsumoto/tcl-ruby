@@ -3,7 +3,6 @@ require 'strscan'
 module Tcl
   module Ruby
     class Interpreter
-      BRCKTS = %w({ [ ").freeze
       EX_CHAR_CHECK = lambda do |s, t|
         (t && !s.check(/\s|\z/)) || (!t && !s.check(/\s|\z|;/))
       end.curry
@@ -14,18 +13,21 @@ module Tcl
         s = StringScanner.new(str)
         r = ListArray.new
         @pstack = [] # stack for brace, bracket, quote
-        buffer = ''  # buffer for list element
-        ret = nil    # return value
+        buffer = '' # ListElement.new('')'' # buffer for list element
+        ret = nil # return value
+        # rr = []
         until s.empty?
           if s.scan(/\\./) then buffer << s[0]
           elsif s.scan(/\#/) then parse_comments(s[0], buffer, r, s)
           elsif !to_list && s.scan(/\r\n|\r|\n|;/)
             ret = parse_command_ends(s[0], buffer, r) || ret
+            # parse_command_ends(s[0], buffer, r, rr)
+            # r = ListArray.new
           elsif s.scan(/\s/) then parse_blanks(s[0], buffer, r)
           elsif s.scan(/\S/)
             buffer << s[0]
             analyze_parentheses(buffer[-1], to_list, EX_CHAR_CHECK[s]) if
-              BRCKTS.find_index(buffer[0])
+              buffer.parenthesis?
           end
         end
         check_pstack
@@ -43,7 +45,9 @@ module Tcl
           r << buffer
           r.to_string
           ret = command(r)
+          # rr << r
           r.clear
+          # r = ListArray.new
           ret
         else
           buffer << bl
@@ -87,8 +91,8 @@ module Tcl
       end
 
       def analyze_brackets(bl)
-        if bl == '['
-          @pstack.push :bracket if @pstack.last != :brace
+        if bl == '[' && @pstack.last != :brace
+          @pstack.push :bracket
         elsif @pstack.last == :bracket
           @pstack.pop
         end

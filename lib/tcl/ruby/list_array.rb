@@ -13,35 +13,32 @@ module Tcl
 
       def clear
         @ary = []
-        @p = []
       end
 
       def <<(buffer)
         @ary << buffer.dup unless buffer.empty?
         buffer.clear
+        buffer.init
         self
       end
 
       def to_string
-        make_p
-        @ary.map! { |e| _to_string(e) }
+        @ary.map!(&:to_tcl_string)
         self
       end
 
       def to_list
-        @ary.map { |e| _to_list(e) }.join(' ')
+        @ary.map(&:to_tcl_list).join(' ')
       end
 
       def replace
-        @ary.size.times do |i|
-          @ary[i] = yield(@ary[i]) unless @p[i]
-        end
+        @ary.map! { |m| m.brace? ? m : yield(m) }
         self
       end
 
       def map!(&block)
+        @ary.each(&:init)
         @ary.map!(&block)
-        make_p
         self
       end
 
@@ -64,30 +61,6 @@ module Tcl
       protected
 
       attr_accessor :ary
-      attr_reader :p
-
-      private
-
-      def _to_string(str)
-        if str[0] == '{' && str[-1] == '}'
-          str = str[1..-2]
-        elsif str[0] == '"' && str[-1] == '"'
-          str = str[1..-2]
-        end
-        str
-      end
-
-      def _to_list(str)
-        if str == '' || str.match(/\s/)
-          "{#{str}}"
-        else
-          str
-        end
-      end
-
-      def make_p
-        @p = @ary.map { |e| e[0] == '{' }
-      end
     end
   end
 end
