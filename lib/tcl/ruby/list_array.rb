@@ -23,7 +23,7 @@ module Tcl
       end
 
       def to_string
-        @p = @ary.map { |e| e[0] == '{' }
+        make_p
         @ary.map! { |e| _to_string(e) }
         self
       end
@@ -41,6 +41,7 @@ module Tcl
 
       def map!(&block)
         @ary.map!(&block)
+        make_p
         self
       end
 
@@ -82,6 +83,10 @@ module Tcl
         else
           str
         end
+      end
+
+      def make_p
+        @p = @ary.map { |e| e[0] == '{' }
       end
     end
   end

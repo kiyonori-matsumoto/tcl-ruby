@@ -8,15 +8,12 @@ module Tcl
       def command(arg)
         return nil if arg.empty?
         arg.replace(&method(:replace))
-        name = arg[0]
-        if @proc.key?(name)
-          exec_proc(arg[1..-1], @proc[name])
-        elsif @hooks.key?(name)
-          @hooks[name].call(arg[1..-1])
-        elsif respond_to?("___#{name}", true)
-          send("___#{name}", arg[1..-1])
+        name = "___#{arg[0]}"
+        if @proc.key?(arg[0]) then exec_proc(arg[1..-1], @proc[arg[0]])
+        elsif @hooks.key?(arg[0]) then @hooks[arg[0]].call(arg[1..-1])
+        elsif respond_to?(name, true) then send(name, arg[1..-1])
         else
-          raise(CommandError, "command not found, #{name}")
+          raise(CommandError, "command not found, #{arg[0]}")
         end
       end
 
@@ -60,22 +57,21 @@ module Tcl
       end
 
       def replace_variable(elem)
-        elem.gsub(/\$\{(.+?)\}|\$(\w+\(\S+?\))|\$(\w+)/) do
-          v = Regexp.last_match(1) || Regexp.last_match(2) || Regexp.last_match(3)
-          h = vv = nil
-          if (m = v.match(/\((\S+?)\)\z/))
-            h = m[1]
-            vv = v
-            v = vv.sub(/\((\S+?)\)\z/, '')
-          end
-          raise TclVariableNotFoundError.new(v.to_s, 'no such variable') unless
+        elem.gsub(/\$\{(.+?)\}|\$(\w+\([^\s)]+\))|\$(\w+)/) do |_|
+          v = Regexp.last_match(1) || Regexp.last_match(2) ||
+              Regexp.last_match(3)
+          h = nil
+          vv = v.dup
+          v.sub!(/\(([^\s)]+)\)\z/) { |_m| h = Regexp.last_match(1); '' }
+          raise TclVariableNotFoundError.new(v, 'no such variable') unless
             @variables.key?(v)
-          if h
-            raise TclVariableNotFoundError.new(vv.to_s, "variable isn't array") unless @variables[v].is_a?(Hash)
-            h = replace_variable(h)
-            @variables[v][h].to_s
+          if h # variable specified is hash
+            raise TclVariableNotFoundError.new(vv, "variable isn't array") unless @variables[v].is_a?(Hash)
+            h = replace_variable(h) # analyze var_string on parenthesis
+            @variables[v][h]
           else
-            raise TclVariableNotFoundError.new(v.to_s, 'variable is array') if @variables[v].is_a?(Hash)
+            raise TclVariableNotFoundError.new(v, 'variable is array') if
+              @variables[v].is_a?(Hash)
             @variables[v]
           end
         end

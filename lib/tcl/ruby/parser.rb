@@ -26,16 +26,15 @@ module Tcl
             buffer << s[0]
             analyze_parentheses(buffer[-1], to_list, EX_CHAR_CHECK[s]) if
               BRCKTS.find_index(buffer[0])
-          else raise(TclError, 'something wrong is happened') # non reachable
           end
         end
-        parser_check_stack
+        check_pstack
         to_list ? r.to_string : ret
       end
 
       private
 
-      def parser_check_stack
+      def check_pstack
         raise(ParseError, "unmatched #{@pstack.last}s") if @pstack.any?
       end
 
