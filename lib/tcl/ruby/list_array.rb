@@ -11,6 +11,11 @@ module Tcl
         @ary = []
       end
 
+      def clear
+        @ary = []
+        @p = []
+      end
+
       def <<(buffer)
         @ary << buffer.dup unless buffer.empty?
         buffer.clear
@@ -58,6 +63,7 @@ module Tcl
       protected
 
       attr_accessor :ary
+      attr_reader :p
 
       private
 

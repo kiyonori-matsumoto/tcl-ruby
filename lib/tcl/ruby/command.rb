@@ -7,7 +7,6 @@ module Tcl
 
       def command(arg)
         return nil if arg.empty?
-        arg.to_string
         arg.replace(&method(:replace))
         name = arg[0]
         if @proc.key?(name)
@@ -24,7 +23,6 @@ module Tcl
       def replace(list)
         # replace commands
         list = replace_commands(list)
-        # list.gsub(/(?<=[^\]]*)\[(.+)\](?=[^\[]*)/) { parse(Regexp.last_match(1)) }
 
         # replace variable
         replace_variable(list)
@@ -57,6 +55,7 @@ module Tcl
             buffer << s[0] if buffer
           end
         end
+        raise(ParseError, 'unmatched brackets') if depth != 0
         l
       end
 

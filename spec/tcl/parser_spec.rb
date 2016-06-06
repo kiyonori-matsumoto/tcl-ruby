@@ -1,5 +1,7 @@
 require 'spec_helper.rb'
 
+REGB = /brace/
+
 RSpec.describe Tcl::Ruby::Interpreter do
   describe '#parse' do
     describe 'parser for create list' do
@@ -49,15 +51,19 @@ RSpec.describe Tcl::Ruby::Interpreter do
     describe 'basic command parser' do
       let(:f) { Tcl::Ruby::Interpreter.new }
       P = Tcl::Ruby::ParseError
-      it 'should raise error on unmatched parenthesises' do
-        expect { f.parse('set A {bc') }.to raise_error P
+      it 'should raise error on unmatched braces' do
+        expect { f.parse('set A {bc') }.to raise_error P, REGB
+        expect { f.parse('set A {bc}}') }.to raise_error P
+      end
+      it 'should raise error on unmatched quotes' do
+        expect { f.parse('set A "BC') }.to raise_error P, /quote/
       end
       it 'should raise error on extra-characters after close-quote' do
-        expect { f.parse('set a "bc"d') }.to raise_error P
+        expect { f.parse('set a "bc"d') }.to raise_error P, /quote/
       end
       it 'should raise error on extra-characters after close-brace' do
-        expect { f.parse('set a {bc}d') }.to raise_error P
-        expect { f.parse('set a {bc}{b}') }.to raise_error P
+        expect { f.parse('set a {bc}d') }.to raise_error P, REGB
+        expect { f.parse('set a {bc}{b}') }.to raise_error P, REGB
       end
       it 'should not raise error on unmatched braces' do
         expect { f.parse('set A b{c') }.not_to raise_error
@@ -75,6 +81,9 @@ RSpec.describe Tcl::Ruby::Interpreter do
       end
       it 'should raise error when sequence is crossed on quate and brackets' do
         expect { f.parse('set a "bf[a"]') }.to raise_error P
+      end
+      it 'should raise error on unmatched brackets' do
+        expect { f.parse('set A B[C') }.to raise_error P
       end
       it 'should act with all list wrapped by braces' do
         expect(f.parse('{set} {a} {1}')).to eq '1'
