@@ -1,14 +1,38 @@
+require 'forwardable'
+
 module Tcl
   module Ruby
     class ListArray
+      extend Forwardable
+
+      def_delegators :@ary, :find
+
       Array.public_instance_methods(false).each do |name|
         define_method(name) do |*args, &block|
           @ary.send(name, *args, &block)
         end
       end
 
+      def uniq!(&block)
+        @ary = @ary.reverse.uniq(&block).reverse
+        self
+      end
+
+      def uniq(&block)
+        dup.uniq!(&block)
+      end
+
+      def find_index_all
+        raise ArgumentError unless block_given?
+        r = []
+        @ary.each_with_index do |e, idx|
+          r << idx.to_s if yield(e)
+        end
+        r
+      end
+
       def initialize(ary = [])
-        @ary = ary
+        @ary = Array(ary).map(&:to_s)
         @brackets = []
       end
 

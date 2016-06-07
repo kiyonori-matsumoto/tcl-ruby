@@ -7,6 +7,7 @@ module Tcl
         @v_stack = []
         @hooks = {}
         @proc = {}
+        @files = {}
       end
 
       def variables(arg)
@@ -24,6 +25,15 @@ module Tcl
         @hooks.delete(name.to_s)
       end
 
+      def commands
+        r = []
+        r.concat private_methods.select { |e| e.match(/^___/) }
+                                .map { |e| e[3..-1] }
+        r.concat @proc.keys
+        r.concat @hooks.keys
+        r
+      end
+
       private
 
       def parse_index_format(a)
@@ -33,6 +43,14 @@ module Tcl
         else
           r = a.to_i
           r < 0 ? 0 : r
+        end
+      end
+
+      def get_fp(id, delete: false)
+        if @files.key?(id)
+          delete ? @files.delete(id) : @files[id]
+        else
+          raise(CommandError, "cannnot find channel named #{id}")
         end
       end
     end

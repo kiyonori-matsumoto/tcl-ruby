@@ -14,21 +14,21 @@ RSpec.describe Tcl::Ruby::Interpreter do
 
     it 'returns length of list' do
       str = 'llength {A B C}'
-      expect(f.parse(str)).to eq 3
+      expect(f.parse(str)).to eq '3'
     end
 
     it 'returns length of null-list' do
-      expect(f.parse('llength {}')).to eq 0
+      expect(f.parse('llength {}')).to eq '0'
     end
 
     it 'returns lenght of list when semi-colon is included' do
       str = 'llength {B C ; DESF}'
-      expect(f.parse(str)).to eq 4
+      expect(f.parse(str)).to eq '4'
     end
 
     it 'returns length of list when multiple parenthesis are' do
       str = 'llength {B C {D E}}'
-      expect(f.parse(str)).to eq 3
+      expect(f.parse(str)).to eq '3'
     end
 
     it 'returns index of list' do
@@ -73,6 +73,63 @@ RSpec.describe Tcl::Ruby::Interpreter do
       expect(f.parse('lrange {A B C} 2 1')).to eq ''
       expect { f.parse('lrange {A B C} 2') }
         .to raise_error Tcl::Ruby::TclArgumentError
+    end
+
+    describe 'concat' do
+      it 'returns concat string' do
+        expect(f.parse('concat a b {c d e} {f {g h}}')).to eq 'a b c d e f {g h}'
+        expect(f.parse('concat " a b {c    " d "  e} f"')).to eq 'a b {c d e} f'
+      end
+    end
+
+    describe 'lsort' do
+      it 'sorts list without option' do
+        expect(f.parse('lsort {a b d c e}')).to eq 'a b c d e'
+      end
+      it 'sorts list with integer option' do
+        expect(f.parse('lsort -integer {1 2 3 30 4}')).to eq '1 2 3 4 30'
+      end
+      it 'sorts list with real option' do
+        expect(f.parse('lsort -real {2 1 3 3.1 30 4}')).to eq '1 2 3 3.1 4 30'
+        expect(f.parse('lsort       {2 1 3 3.1 30 4}')).to eq '1 2 3 3.1 30 4'
+      end
+      it 'sorts list reversed with decreasing option' do
+        expect(f.parse('lsort -decreasing {a b d c e}')).to eq 'e d c b a'
+      end
+      it 'returns uniqued list with unique option' do
+        expect(f.parse('lsort -unique {a b b a c}')).to eq 'a b c'
+      end
+      it 'returns sorted list with index option' do
+        expect(f.parse('lsort -index 1 {{1 z} {2 a}} ')).to eq '{2 a} {1 z}'
+        expect(f.parse('lsort -index 0 -unique {{1 a} {1 b}}')).to eq '{1 b}'
+      end
+    end
+
+    describe 'lsearch' do
+      it 'searches list element' do
+        expect(f.parse 'lsearch {a b c d e} c').to eq '2'
+      end
+      it 'searches list element with -inline option' do
+        expect(f.parse 'lsearch -inline {a b c d e} c').to eq 'c'
+      end
+      it 'searches list elements with -all option' do
+        expect(f.parse 'lsearch -all {a b a b c} a').to eq '0 2'
+      end
+      it 'searches list elements with both -all and -inline options' do
+        expect(f.parse 'lsearch -all -inline {a b a b c} a').to eq 'a a'
+      end
+      it 'searches list elements with globe style' do
+        expect(f.parse 'lsearch -all -inline {a12 b23 c34} {a*}').to eq 'a12'
+        expect(f.parse 'lsearch -all -inline {a aa ab ac bc} {a?}').to eq 'aa ab ac'
+      end
+      it 'searches list with regexp option' do
+        expect(f.parse 'lsearch -all -inline -regexp {a12 b23 c34} {.1.}').to eq 'a12'
+      end
+      it 'searches list with not option' do
+        expect(f.parse 'lsearch -all -inline -not -regexp {a12 b23 c34} {.1.}').to eq 'b23 c34'
+        expect(f.parse 'lsearch -not {a b c d e} c').to eq '0'
+        expect(f.parse 'lsearch -inline -not {a b c d e} c').to eq 'a'
+      end
     end
   end
 end

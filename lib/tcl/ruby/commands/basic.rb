@@ -17,6 +17,12 @@ module Tcl
         eval arg.join('')
       end
 
+      def ___eval(*arg)
+        raise(TclArgumentError, 'wrong number of arguments(0 for 1..)') if
+        arg.empty?
+        parse(___concat(*arg))
+      end
+
       def ___if(*arg)
         arg.delete('then')
         arg.delete('else')
@@ -73,11 +79,11 @@ module Tcl
         end
       end
 
-      def ___break()
+      def ___break
         throw :break
       end
 
-      def ___continue()
+      def ___continue
         throw :continue
       end
 
@@ -90,20 +96,8 @@ module Tcl
           increment.to_i).to_s
       end
 
-      def ___puts(*arg)
-        opts = {}
-        if arg.size != 1
-          opts = OptionParser.parse(['nonewline'], arg)
-        end
-        __puts_body(*arg, opts)
-      end
-
-      def __puts_body(val, opts)
-        if opts['nonewline']
-          print val
-        else
-          puts val
-        end
+      def ___format(str, *args)
+        str % args
       end
 
       def ___proc(name, args, body)

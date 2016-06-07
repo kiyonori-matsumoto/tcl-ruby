@@ -8,9 +8,8 @@ module Tcl
       end.curry
 
       def parse(str, to_list = false)
-        str << "\n"
-        str.gsub!(/\\\n\s*/, ' ') # replace back-slash & linebreak & extra ws
-        @s = StringScanner.new(str)
+        str2 = (str + "\n").gsub(/\\\n\s*/, ' ') # replace \ & \n & extra ws
+        @s = StringScanner.new(str2)
         @list_array = ListArray.new
         @pstack = [] # stack for brace, bracket, quote
         @buffer = '' # ListElement.new('')'' # buffer for list element
