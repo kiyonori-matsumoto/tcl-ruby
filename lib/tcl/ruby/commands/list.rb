@@ -99,17 +99,16 @@ module Tcl
                when [nil, true] then :find
                else :index
                end
-        block = if opts['regexp'] then -> (x) { x =~ /#{pattern}/ }
-                elsif opts['exact'] then -> (x) { x == pattern }
+        block = if opts['regexp'] then -> (b, x) { !!(x =~ /#{pattern}/) == b }
+                elsif opts['exact'] then -> (b, x) { (x == pattern) == b }
                 else
                   pattern.gsub!(/\*/, '.*')
                   pattern.tr!('?', '.')
                   pattern.gsub!(/\\(.)/) { Regexp.last_match(1) }
-                  -> (x) { x =~ /\A#{pattern}\z/ }
-                end
-        block2 = opts['not'] ? -> (x) { !block.call(x) } : -> (x) { block.call(x) }
+                  -> (b, x) { !!(x =~ /\A#{pattern}\z/) == b }
+                end.curry
 
-        v = l.send(func, &block2)
+        v = l.send(func, &block.call(!opts['not']))
         ListArray.new(v).to_list
       end
     end
