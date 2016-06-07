@@ -1,5 +1,7 @@
 require 'spec_helper.rb'
 
+A = Tcl::Ruby::TclArgumentError
+
 RSpec.describe Tcl::Ruby::Interpreter do
   describe '#parse' do
     let(:f) { Tcl::Ruby::Interpreter.new }
@@ -113,6 +115,37 @@ RSpec.describe Tcl::Ruby::Interpreter do
       it 'should return varue' do
         f.parse('proc aaaa {} { return 100 }')
         expect(f.parse('aaaa')).to eq '100'
+      end
+      it 'should act with multi_globals' do
+        f.parse('proc aaaa {z} { if {$z == 1} { return 1 }; global a; incr a [aaaa [expr $z - 1]]; return $a }')
+        expect(f.parse('aaaa 10')).to eq '256'
+      end
+    end
+
+    describe 'format' do
+      it 'returns format string' do
+        expect(f.parse 'format "%02d" 3').to eq '03'
+      end
+      it 'returns format string with multiple args' do
+        expect(f.parse 'format "%-3s %0.3f" "N" 2.5').to eq 'N   2.500'
+      end
+      it 'should raise error on format mismatch' do
+        expect { f.parse 'format "%-3s %0.3f" "N"' }
+          .to raise_error Tcl::Ruby::TclArgumentError
+      end
+    end
+
+    describe 'eval' do
+      it 'evaluate list' do
+        expect(f.parse 'eval [list set A 1]').to eq '1'
+      end
+      it 'evaluate multiple arguments' do
+        expect(f.parse 'eval {set A 1} {;} {set B 3}').to eq '3'
+        expect(f.variables('A')).to eq '1'
+        expect(f.variables('B')).to eq '3'
+      end
+      it 'should raise error on wrong argument count' do
+        expect { f.parse 'eval' }.to raise_error A
       end
     end
   end

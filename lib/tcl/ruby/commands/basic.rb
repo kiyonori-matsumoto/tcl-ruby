@@ -3,22 +3,27 @@ module Tcl
     class Interpreter
       private
 
-      def ___set(arg)
-        raise(TclArgumentError, 'set variable ?newValue?') unless
-          (1..2).cover? arg.size
-        if (m = arg[0].match(/(\w+)\((\S+?)\)/))
-          ___array_set([m[1], "{#{m[2]}} {#{arg[1]}}"])
+      def ___set(var_name, value = nil)
+        if (m = var_name.match(/(\w+)\((\S+?)\)/))
+          ___array_set(m[1], "{#{m[2]}} {#{value}}") if value
+          ___array_get(m[1], "{#{m[2]}}")
         else
-          @variables[arg[0]] = arg[1] if arg.size == 2
-          @variables[arg[0]]
+          @variables[var_name] = value if value
+          @variables[var_name]
         end
       end
 
-      def ___expr(arg)
+      def ___expr(*arg)
         eval arg.join('')
       end
 
-      def ___if(arg)
+      def ___eval(*arg)
+        raise(TclArgumentError, 'wrong number of arguments(0 for 1..)') if
+        arg.empty?
+        parse(___concat(*arg))
+      end
+
+      def ___if(*arg)
         arg.delete('then')
         arg.delete('else')
         arg.delete('elseif')
@@ -31,20 +36,19 @@ module Tcl
         nil
       end
 
-      def ___for(arg)
-        raise(TclArgumentError, 'for start test next body') unless arg.size == 4
-        parse(arg[0])
+      def ___for(start, tst, nxt, body)
+        parse(start)
         catch(:break) do
-          while eval(replace(arg[1]))
+          while eval(replace(tst))
             catch(:continue) do
-              parse(arg[3])
+              parse(body)
             end
-            parse(arg[2])
+            parse(nxt)
           end
         end
       end
 
-      def ___foreach(arg)
+      def ___foreach(*arg)
         varlist = []
         list = []
         while arg[2]
@@ -65,10 +69,9 @@ module Tcl
         end
       end
 
-      def ___while(arg)
-        body = arg[1]
+      def ___while(tst, body)
         catch(:break) do
-          while eval(replace(arg[0]))
+          while eval(replace(tst))
             catch(:continue) do
               parse(body)
             end
@@ -76,42 +79,38 @@ module Tcl
         end
       end
 
-      def ___break(_arg)
+      def ___break
         throw :break
       end
 
-      def ___continue(_arg)
+      def ___continue
         throw :continue
       end
 
-      def ___return(arg)
-        throw(:return, arg[0])
+      def ___return(val = nil)
+        throw(:return, val)
       end
 
-      def ___incr(arg)
-        raise(TclArgumentError, 'incr varName ?increment?') unless
-          (1..2).cover?(arg.size)
-        incr = (arg[1]) ? arg[1].to_i : 1
-        @variables[arg[0]] = ((@variables[arg[0]] || 0).to_i + incr).to_s
+      def ___incr(var_name, increment = 1)
+        @variables[var_name] = ((@variables[var_name] || 0).to_i +
+          increment.to_i).to_s
       end
 
-      def ___puts(arg)
-        puts arg[0]
+      def ___format(str, *args)
+        str % args
       end
 
-      def ___proc(arg)
-        raise(TclArgumentError, 'proc name args body') unless arg.size == 3
-        @proc[arg[0]] = arg[1..2]
+      def ___proc(name, args, body)
+        @proc[name] = [args, body]
       end
 
-      def ___global(arg)
+      def ___global(*arg)
         @variables[:___global] ||= []
         arg.each do |v|
           @variables[:___global] << v
           @variables[v] = @global[v] if @global
         end
       end
-      # define_method('___#') { |_p| nil }
     end
   end
 end

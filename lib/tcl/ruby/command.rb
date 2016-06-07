@@ -5,26 +5,30 @@ module Tcl
     class Interpreter
       private
 
-      def command(arg)
-        return nil if arg.empty?
-        arg.to_string
-        arg.replace(&method(:replace))
-        name = arg[0]
-        if @proc.key?(name)
-          exec_proc(arg[1..-1], @proc[name])
-        elsif @hooks.key?(name)
-          @hooks[name].call(arg[1..-1])
-        elsif respond_to?("___#{name}", true)
-          send("___#{name}", arg[1..-1])
-        else
-          raise(CommandError, "command not found, #{name}")
+      def command(cmds)
+        ret = nil
+        cmds.each do |arg|
+          next if arg.empty?
+          arg.replace(&method(:replace))
+          name = "___#{arg[0]}"
+          if @proc.key?(arg[0]) then ret = exec_proc(arg[1..-1], @proc[arg[0]])
+          elsif @hooks.key?(arg[0]) then ret = @hooks[arg[0]].call(arg[1..-1])
+          elsif respond_to?(name, true)
+          begin
+            ret = send(name, *arg[1..-1])
+          rescue ArgumentError => e
+            raise(TclArgumentError, "#{arg[0]}: #{e.message}")
+          end
+          else
+            raise(CommandError, "command not found, #{arg[0]}")
+          end
         end
+        ret
       end
 
       def replace(list)
         # replace commands
         list = replace_commands(list)
-        # list.gsub(/(?<=[^\]]*)\[(.+)\](?=[^\[]*)/) { parse(Regexp.last_match(1)) }
 
         # replace variable
         replace_variable(list)
@@ -57,35 +61,36 @@ module Tcl
             buffer << s[0] if buffer
           end
         end
+        raise(ParseError, 'unmatched brackets') if depth != 0
         l
       end
 
       def replace_variable(elem)
-        elem.gsub(/\$\{(.+?)\}|\$(\w+\(\S+?\))|\$(\w+)/) do
-          v = Regexp.last_match(1) || Regexp.last_match(2) || Regexp.last_match(3)
-          h = vv = nil
-          if (m = v.match(/\((\S+?)\)\z/))
-            h = m[1]
-            vv = v
-            v = vv.sub(/\((\S+?)\)\z/, '')
-          end
-          raise TclVariableNotFoundError.new(v.to_s, 'no such variable') unless
+        elem.gsub!(/\$\{(.+?)\}|\$(\w+\([^\s)]+\))|\$(\w+)/) do |_|
+          v = Regexp.last_match(1) || Regexp.last_match(2) ||
+              Regexp.last_match(3)
+          h = nil
+          vv = v.dup
+          v.sub!(/\(([^\s)]+)\)\z/) { |_m| h = Regexp.last_match(1); '' }
+          raise TclVariableNotFoundError.new(v, 'no such variable') unless
             @variables.key?(v)
-          if h
-            raise TclVariableNotFoundError.new(vv.to_s, "variable isn't array") unless @variables[v].is_a?(Hash)
-            h = replace_variable(h)
-            @variables[v][h].to_s
+          if h # variable specified is hash
+            raise TclVariableNotFoundError.new(vv, "variable isn't array") unless @variables[v].is_a?(Hash)
+            h = replace_variable(h) # analyze var_string on parenthesis
+            @variables[v][h]
           else
-            raise TclVariableNotFoundError.new(v.to_s, 'variable is array') if @variables[v].is_a?(Hash)
+            raise TclVariableNotFoundError.new(v, 'variable is array') if
+              @variables[v].is_a?(Hash)
             @variables[v]
           end
         end
+        elem
       end
 
       def exec_proc(arg, proc_info)
         proc_arg = parse(proc_info[0], true)
         raise(TclArgumentError, proc_arg.to_s) if proc_arg.size != arg.size
-        @variables[:___global].each do |v| # FIXME: Buggy
+        @variables[:___global].each do |v| # backup globals
           @global[v] = @variables[v]
         end if @variables.key?(:___global)
         @v_stack.push(@variables)
@@ -96,10 +101,13 @@ module Tcl
         ret = catch(:return) do
           parse(proc_info[1])
         end
-        @variables[:___global].each do |v| # FIXME: Buggy
+        @variables[:___global].each do |v| # write back
           @global[v] = @variables[v]
         end if @variables.key?(:___global)
         @variables = @v_stack.pop
+        @variables[:___global].each do |v| # re-copy global
+          @variables[v] = @global[v]
+        end if @variables.key?(:___global)
         ret
       end
     end

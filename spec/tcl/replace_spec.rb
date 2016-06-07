@@ -18,7 +18,7 @@ RSpec.describe Tcl::Ruby::Interpreter do
 
     it 'should replace variables' do
       f.parse('set B {1 2 3}')
-      expect(f.parse('llength $B')).to eq 3
+      expect(f.parse('llength $B')).to eq '3'
     end
 
     it 'should replace variables only once' do
@@ -29,19 +29,19 @@ RSpec.describe Tcl::Ruby::Interpreter do
     end
 
     it 'should replace command' do
-      expect(f.parse('llength [list A B C]')).to eq 3
+      expect(f.parse('llength [list A B C]')).to eq '3'
       expect(f.parse('set C [llength [list A B C D {E}]]')).to eq '5'
       expect(f.variables('C')).to eq '5'
     end
 
     it 'should not replace variables and commands under "{"' do
       expect(f.parse('set B {$A}')).to eq '$A'
-      expect(f.parse('llength {[list A B C]}')).to eq 4
+      expect(f.parse('llength {[list A B C]}')).to eq '4'
     end
 
     it 'should replace variables and commands under "' do
       expect(f.parse('set B "$A"')).to eq '1'
-      expect(f.parse('llength "[list A B C]"')).to eq 3
+      expect(f.parse('llength "[list A B C]"')).to eq '3'
     end
 
     it 'should exec comand with replaced variable' do

@@ -1,40 +1,77 @@
+require 'forwardable'
+
 module Tcl
   module Ruby
     class ListArray
+      extend Forwardable
+
+      def_delegators :@ary, :find, :any?
+
       Array.public_instance_methods(false).each do |name|
         define_method(name) do |*args, &block|
           @ary.send(name, *args, &block)
         end
       end
 
-      def initialize
+      def uniq!(&block)
+        @ary = @ary.reverse.uniq(&block).reverse
+        self
+      end
+
+      def uniq(&block)
+        dup.uniq!(&block)
+      end
+
+      def find_index_all
+        raise ArgumentError unless block_given?
+        r = []
+        @ary.each_with_index do |e, idx|
+          r << idx.to_s if yield(e)
+        end
+        r
+      end
+
+      def initialize(ary = [])
+        @ary = Array(ary).map(&:to_s)
+        @brackets = []
+      end
+
+      def clear
         @ary = []
+        @brackets = []
+      end
+
+      def bracket_add(val)
+        @brackets[@ary.size] ||= []
+        @brackets[@ary.size] << val
       end
 
       def <<(buffer)
         @ary << buffer.dup unless buffer.empty?
         buffer.clear
+        buffer.init
         self
       end
 
       def to_string
-        @p = @ary.map { |e| e[0] == '{' }
-        @ary.map! { |e| _to_string(e) }
+        @ary.map!(&:to_tcl_string)
         self
       end
 
       def to_list
-        @ary.map { |e| _to_list(e) }.join(' ')
+        @ary.map(&:to_tcl_list).join(' ')
       end
 
       def replace
-        @ary.size.times do |i|
-          @ary[i] = yield(@ary[i]) unless @p[i]
+        @ary.size.times do |n|
+          @ary[n] = yield(@ary[n]) unless @ary[n].brace?
         end
+        # @ary.map! { |m| m.brace? ? m : yield(m) }
         self
       end
 
       def map!(&block)
+        @ary.each(&:init)
         @ary.map!(&block)
         self
       end
@@ -55,28 +92,15 @@ module Tcl
         end
       end
 
+      def to_h
+        raise(TclArgumentError, 'list must have an even number of elements') if
+          @ary.size.odd?
+        Hash[@ary.each_slice(2).to_a]
+      end
+
       protected
 
       attr_accessor :ary
-
-      private
-
-      def _to_string(str)
-        if str[0] == '{' && str[-1] == '}'
-          str = str[1..-2]
-        elsif str[0] == '"' && str[-1] == '"'
-          str = str[1..-2]
-        end
-        str
-      end
-
-      def _to_list(str)
-        if str == '' || str.match(/\s/)
-          "{#{str}}"
-        else
-          str
-        end
-      end
     end
   end
 end
