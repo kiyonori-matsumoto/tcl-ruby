@@ -5,7 +5,7 @@ module Tcl
     class ListArray
       extend Forwardable
 
-      def_delegators :@ary, :find
+      def_delegators :@ary, :find, :any?
 
       Array.public_instance_methods(false).each do |name|
         define_method(name) do |*args, &block|
