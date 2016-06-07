@@ -30,7 +30,9 @@ module Tcl
         case a
         when /end-(\d+)/ then -1 - Regexp.last_match(1).to_i
         when /end/ then -1
-        else a.to_i
+        else
+          r = a.to_i
+          r < 0 ? 0 : r
         end
       end
     end

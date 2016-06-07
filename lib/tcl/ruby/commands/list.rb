@@ -3,19 +3,18 @@ module Tcl
     class Interpreter
       private
 
-      def ___llength(arg)
-        raise(CommandError, 'llength list') if arg.size != 1
-        parse(arg[0], true).size
+      def ___llength(list)
+        parse(list, true).size
       end
 
-      def ___list(arg)
-        arg.to_list
+      def ___list(*arg)
+        ListArray.new(arg).to_list
       end
 
-      def ___lindex(arg)
-        return arg[0] if arg[1].nil? || arg[1] == ''
-        l = arg[0]
-        arg[1..-1].each do |as|
+      def ___lindex(list, *indexes)
+        return list if indexes.nil? || indexes.size == 0
+        l = list
+        indexes.each do |as|
           parse(as, true).each do |a|
             l = parse(l, true)
             pos = parse_index_format(a)
@@ -25,38 +24,27 @@ module Tcl
         l || ''
       end
 
-      def ___join(arg)
-        raise(CommandError, 'join list joinString?') unless
-          (1..2).cover? arg.size
-        separator = arg[1] || ' '
-        parse(arg[0], true).join(separator)
+      def ___join(list, separator = ' ')
+        parse(list, true).join(separator)
       end
 
-      def ___linsert(arg)
-        raise(CommandError, 'linsert list insertposition elements') unless
-          arg.size >= 3
-        l = parse(arg[0], true)
-        l.insert(arg[1].to_i, *arg[2..-1])
+      def ___linsert(list, index, element, *elements)
+        l = parse(list, true)
+        l.insert(parse_index_format(index), element, *elements)
         l.to_list
       end
 
-      def ___lrange(arg)
-        raise(CommandError, 'lrange list first last') unless arg.size == 3
-        first = arg[1].to_i
-        first = 0 if first < 0
-        last = arg[2].to_i
-        l = parse(arg[0], true)
-        if first <= last
-          l[first..last].to_list
-        else
-          ''
-        end
+      def ___lrange(list, first, last)
+        first = parse_index_format first
+        last = parse_index_format last
+        l = parse(list, true)
+        l[first..last].to_list
       end
 
-      def ___lappend(arg)
-        l = parse(variables(arg[0]), true)
-        l.push(*arg[1..-1])
-        @variables[arg[0]] = l.to_list
+      def ___lappend(var_name, *values)
+        l = parse(variables(var_name), true)
+        l.push(*values)
+        @variables[var_name] = l.to_list
       end
     end
   end

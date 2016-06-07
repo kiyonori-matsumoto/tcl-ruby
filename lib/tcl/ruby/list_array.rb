@@ -7,8 +7,8 @@ module Tcl
         end
       end
 
-      def initialize
-        @ary = []
+      def initialize(ary = [])
+        @ary = ary
         @brackets = []
       end
 
@@ -69,6 +69,8 @@ module Tcl
       end
 
       def to_h
+        raise(TclArgumentError, 'list must have an even number of elements') if
+          @ary.size.odd?
         Hash[@ary.each_slice(2).to_a]
       end
 

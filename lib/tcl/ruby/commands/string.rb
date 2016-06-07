@@ -5,7 +5,7 @@ module Tcl
     class Interpreter
       private
 
-      def ___string(arg)
+      def ___string(*arg)
         send("___string_#{arg[0]}", *arg[1..-1])
       rescue ArgumentError => e
         raise(TclArgumentError, "string #{arg[0]}: #{e.message}")
@@ -76,7 +76,8 @@ module Tcl
         str * count.to_i
       end
 
-      def ___string_tolower(str, first = 0, last = -1)
+      def ___string_tolower(str, first = 0, last = nil)
+        last ||= str.size
         __string_tosomething(str, first, last, :downcase)
       end
 

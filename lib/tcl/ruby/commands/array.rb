@@ -3,28 +3,23 @@ module Tcl
     class Interpreter
       private
 
-      def ___array(arg)
-        send("___array_#{arg[0]}", arg[1..-1])
+      def ___array(*arg)
+        send("___array_#{arg[0]}", *arg[1..-1])
+      rescue ArgumentError => e
+        raise(TclArgumentError, "array #{arg[0]}: #{e.message}")
       end
 
-      def ___array_set(arg)
-        name = arg[0]
+      def ___array_set(name, list)
         raise(CommandError, "#{name} is not array") unless
           @variables[name].is_a?(Hash) || !@variables.key?(name)
-        l = parse(arg[1], true)
-        raise(TclArgumentError, 'list must have an even number of elements') unless
-          l.size.even?
+        l = parse(list, true).to_h
         @variables[name] ||= {}
-        @variables[name].merge!(Hash[*l])
+        @variables[name].merge!(l)
       end
 
-      def ___array_unset(arg)
-        raise(TclArgumentError, 'array unset arrayName ?pattern?') unless
-          (1..2).cover?(arg.size)
-        name = arg[0]
+      def ___array_unset(name, pattern = nil)
         return '' unless @variables[name].is_a?(Hash)
-        if arg.size == 2
-          pattern = arg[1]
+        if pattern
           @variables[name].delete(pattern)
         else
           @variables.delete(name)
@@ -32,13 +27,9 @@ module Tcl
         ''
       end
 
-      def ___array_get(arg)
-        raise(TclArgumentError, 'array get arrayName ?pattern?') unless
-          (1..2).cover?(arg.size)
-        name = arg[0]
+      def ___array_get(name, pattern = nil)
         return '' unless @variables[name].is_a?(Hash)
-        if arg.size == 2
-          pattern = arg[1]
+        if pattern
           return '' unless @variables[name].key?(pattern)
           "#{pattern} #{@variables[name][pattern]}"
         else
@@ -46,9 +37,7 @@ module Tcl
         end
       end
 
-      def ___array_exists(arg)
-        raise(TclArgumentError, 'array exists arrayName') unless arg.size == 1
-        name = arg[0]
+      def ___array_exists(name)
         @variables[name].is_a?(Hash) ? '1' : '0'
       end
     end

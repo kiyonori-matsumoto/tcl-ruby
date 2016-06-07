@@ -13,7 +13,12 @@ module Tcl
           name = "___#{arg[0]}"
           if @proc.key?(arg[0]) then ret = exec_proc(arg[1..-1], @proc[arg[0]])
           elsif @hooks.key?(arg[0]) then ret = @hooks[arg[0]].call(arg[1..-1])
-          elsif respond_to?(name, true) then ret = send(name, arg[1..-1])
+          elsif respond_to?(name, true)
+          begin
+            ret = send(name, *arg[1..-1])
+          rescue ArgumentError => e
+            raise(TclArgumentError, "#{arg[0]}: #{e.message}")
+          end
           else
             raise(CommandError, "command not found, #{arg[0]}")
           end

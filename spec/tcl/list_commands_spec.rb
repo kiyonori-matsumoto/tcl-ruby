@@ -63,7 +63,7 @@ RSpec.describe Tcl::Ruby::Interpreter do
       expect(f.parse('linsert {A  B  C} 1 D E')).to eq 'A D E B C'
       expect(f.parse('linsert {a b {c d} e} 1 {d e}')).to eq 'a {d e} b {c d} e'
       expect { f.parse('linsert {A B C} 1') }
-        .to raise_error Tcl::Ruby::CommandError
+        .to raise_error Tcl::Ruby::TclArgumentError
     end
 
     it 'returns ranged list' do
@@ -72,7 +72,7 @@ RSpec.describe Tcl::Ruby::Interpreter do
       expect(f.parse('lrange {A  B  ZED  {D T}} 2 6')).to eq 'ZED {D T}'
       expect(f.parse('lrange {A B C} 2 1')).to eq ''
       expect { f.parse('lrange {A B C} 2') }
-        .to raise_error Tcl::Ruby::CommandError
+        .to raise_error Tcl::Ruby::TclArgumentError
     end
   end
 end
