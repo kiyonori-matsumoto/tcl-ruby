@@ -56,28 +56,32 @@ module Tcl
         if args.size > 1
           opts = OptionParser.parse(
             ['ascii', 'dictionary', 'integer', 'real', 'command?', 'increasing',
-             'decreasing', 'index?', 'unique'], args)
+             'decreasing', 'index?', 'unique'], args
+          )
         end
         __lsort_body(*args, opts)
       end
 
       def __lsort_body(list, opts)
         l = parse(list, true)
-        func = if opts['directionary'] then :upcase
-               elsif opts['integer'] then :to_i
-               elsif opts['real'] then :to_f
-               else :to_s
-               end
+        func = lsort_func_name(opts)
+        sort_func = func
         if opts['index']
           index = parse_index_format(opts['index'])
           sort_func = -> (x) { parse(x, true)[index].send(func) }
-        else
-          sort_func = func
         end
         l.uniq!(&sort_func) if opts['unique']
         l.sort_by!(&sort_func)
         l.reverse! if opts['decreasing']
         ListArray.new(l).to_list
+      end
+
+      def lsort_func_name(opts)
+        if opts['directionary'] then :upcase
+        elsif opts['integer'] then :to_i
+        elsif opts['real'] then :to_f
+        else :to_s
+        end
       end
 
       def ___lsearch(*args)
@@ -86,30 +90,37 @@ module Tcl
           opts = OptionParser.parse(
             ['all', 'ascii', 'decreasing', 'dictionary', 'exact', 'glob',
              'increasing', 'inline', 'integer', 'not', 'real', 'regexp',
-             'sorted', 'start?'], args)
+             'sorted', 'start?'], args
+          )
         end
         __lsearch_body(*args, opts)
       end
 
       def __lsearch_body(list, pattern, opts)
+        func = lsearch_func_name(opts)
+        block = lsearch_search_func(pattern, opts)
         l = parse(list, true)
-        func = case [opts['all'], opts['inline']]
-               when [true, true] then :select
-               when [true, nil] then :find_index_all
-               when [nil, true] then :find
-               else :index
-               end
-        block = if opts['regexp'] then -> (b, x) { !!(x =~ /#{pattern}/) == b }
-                elsif opts['exact'] then -> (b, x) { (x == pattern) == b }
-                else
-                  pattern.gsub!(/\*/, '.*')
-                  pattern.tr!('?', '.')
-                  pattern.gsub!(/\\(.)/) { Regexp.last_match(1) }
-                  -> (b, x) { !!(x =~ /\A#{pattern}\z/) == b }
-                end.curry
-
         v = l.send(func, &block.call(!opts['not']))
         ListArray.new(v).to_list
+      end
+
+      def lsearch_func_name(opts)
+        case [opts['all'], opts['inline']]
+        when [true, true] then :select
+        when [true, nil] then :find_index_all
+        when [nil, true] then :find
+        else :index
+        end
+      end
+
+      def lsearch_search_func(pattern, opts)
+        if opts['regexp'] then -> (b, x) { !!(x =~ /#{pattern}/) == b }
+        elsif opts['exact'] then -> (b, x) { (x == pattern) == b }
+        else
+          ptn = pattern.gsub(/\*/, '.*').tr('?', '.')
+                       .gsub(/\\(.)/) { Regexp.last_match(1) }
+          -> (b, x) { !!(x =~ /\A#{ptn}\z/) == b }
+        end.curry
       end
     end
   end
