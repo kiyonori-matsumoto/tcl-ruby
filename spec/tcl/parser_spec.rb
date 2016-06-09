@@ -91,6 +91,9 @@ RSpec.describe Tcl::Ruby::Interpreter do
       it 'does accept semi-colon just after close-brace' do
         expect { f.parse('set a {1};') }.not_to raise_error
       end
+      it "is able to parse commands with p method" do
+        expect(f.p('set a z')).to eq 'z'
+      end
     end
   end
 end

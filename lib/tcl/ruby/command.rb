@@ -3,6 +3,14 @@ require 'strscan'
 module Tcl
   module Ruby
     class Interpreter
+
+      def parse(str, to_list = false)
+        parsed_ary = Parser.parse(str, to_list)
+        to_list ? parsed_ary : command(parsed_ary)
+      end
+
+      alias p parse
+
       private
 
       def command(cmds)
@@ -14,11 +22,11 @@ module Tcl
           if @proc.key?(arg[0]) then ret = exec_proc(arg[1..-1], @proc[arg[0]])
           elsif @hooks.key?(arg[0]) then ret = @hooks[arg[0]].call(arg[1..-1])
           elsif respond_to?(name, true)
-          begin
-            ret = send(name, *arg[1..-1])
-          rescue ArgumentError => e
-            raise(TclArgumentError, "#{arg[0]}: #{e.message}")
-          end
+            begin
+              ret = send(name, *arg[1..-1])
+            rescue ArgumentError => e
+              raise(TclArgumentError, "#{arg[0]}: #{e.message}")
+            end
           else
             raise(CommandError, "command not found, #{arg[0]}")
           end
